@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}OCR Agent{% endblock %}</title>
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    
+    <style>
+        /* 4-COLOR THEME: Blue (#007bff), White (#ffffff), Dark (#212529), Light Gray (#f8f9fa) */
+        body {
+            font-family: system-ui, sans-serif;
+            background: #ffffff;
+            color: #212529;
+        }
+        
+        /* Simple Grid */
+        .container-fluid {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .row {
+            display: flex;
+            flex-wrap: wrap;
+            margin: -10px;
+        }
+        
+        .col-lg-6 {
+            flex: 0 0 50%;
+            max-width: 50%;
+            padding: 10px;
+        }
+        
+        .col-lg-4 {
+            flex: 0 0 33.333%;
+            max-width: 33.333%;
+            padding: 10px;
+        }
+        
+        .col-lg-12, .col-12 {
+            flex: 0 0 100%;
+            max-width: 100%;
+            padding: 10px;
+        }
+        
+        /* Simple Cards - Light Gray background, Dark text */
+        .card {
+            background: #f8f9fa;
+            border: 1px solid #212529;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            color: #212529;
+        }
+        
+        /* Card Headers - Blue background, White text */
+        .card-header {
+            background: #007bff !important;
+            color: #ffffff !important;
+            padding: 15px 20px;
+            margin: -1px -1px 20px -1px;
+            border-radius: 8px 8px 0 0;
+            font-weight: 500;
+            border-bottom: 1px solid #212529;
+        }
+        
+        /* Card Body - Light Gray background, Dark text */
+        .card-body {
+            padding: 20px;
+            background: #f8f9fa;
+            color: #212529;
+        }
+        
+        /* Dark backgrounds get White text */
+        .bg-dark {
+            background: #f8f9fa !important;
+            color: #212529 !important;
+        }
+        
+        .bg-dark .card-header {
+            background: #007bff !important;
+            color: #ffffff !important;
+        }
+        
+        /* Override Bootstrap colors to match our color theme */
+        .text-primary { color: #007bff !important; }
+        .text-white { color: #ffffff !important; }
+        .text-light { color: #212529 !important; }
+        .text-dark { color: #212529 !important; }
+        .text-muted { color: #212529 !important; }
+        
+        .bg-primary { background: #007bff !important; color: #ffffff !important; }
+        .bg-success { background: #007bff !important; color: #ffffff !important; }
+        .bg-info { background: #007bff !important; color: #ffffff !important; }
+        .bg-warning { background: #007bff !important; color: #ffffff !important; }
+        .bg-danger { background: #007bff !important; color: #ffffff !important; }
+        .bg-secondary { background: #f8f9fa !important; color: #212529 !important; }
+        
+        /* Navbar - Blue background, White text */
+        .navbar {
+            background: #007bff !important;
+            color: #ffffff !important;
+        }
+        
+        .navbar-brand, .nav-link {
+            color: #ffffff !important;
+        }
+        
+        /* Buttons follow the color scheme */
+        .btn-primary {
+            background: #007bff !important;
+            border-color: #007bff !important;
+            color: #ffffff !important;
+        }
+        
+        .btn-success, .btn-info, .btn-warning, .btn-danger {
+            background: #007bff !important;
+            border-color: #007bff !important;
+            color: #ffffff !important;
+        }
+        
+        .btn-secondary {
+            background: #f8f9fa !important;
+            border-color: #212529 !important;
+            color: #212529 !important;
+        }
+        
+        .btn-outline-primary {
+            background: #ffffff !important;
+            border-color: #007bff !important;
+            color: #007bff !important;
+        }
+        
+        /* Badges use only our colors */
+        .badge {
+            background: #007bff !important;
+            color: #ffffff !important;
+        }
+        
+        /* Ensure proper contrast for all elements */
+        .alert {
+            background: #f8f9fa !important;
+            color: #212529 !important;
+            border: 1px solid #212529 !important;
+        }
+        
+        /* Forms - Light Gray background, Dark text */
+        .form-control, .form-select {
+            background: #f8f9fa !important;
+            color: #212529 !important;
+            border: 1px solid #212529 !important;
+        }
+        
+        /* Footer */
+        .bg-light {
+            background: #f8f9fa !important;
+            color: #212529 !important;
+        }
+        
+        /* Responsive */
+        @media (max-width: 992px) {
+            .col-lg-6, .col-lg-4 {
+                flex: 0 0 100%;
+                max-width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark">
+        <div class="container">
+            <a class="navbar-brand" href="{{ url_for('main.dashboard') }}">
+                <i class="fas fa-brain me-2"></i>OCR Agent Pro
+            </a>
+            
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('main.dashboard') }}">
+                            <i class="fas fa-home me-1"></i>Dashboard
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('main.table_panel') }}">
+                            <i class="fas fa-table me-1"></i>Documents
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('main.chatbot_panel') }}">
+                            <i class="fas fa-comments me-1"></i>AI Chat
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('main.lesson_generator_panel') }}">
+                            <i class="fas fa-graduation-cap me-1"></i>Lessons
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('main.settings_panel') }}">
+                            <i class="fas fa-cog me-1"></i>Settings
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+    
+    <!-- Main Content -->
+    <main class="container-fluid">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-light text-center text-muted py-3 mt-5">
+        <div class="container">
+            <small>&copy; 2025 OCR Agent Pro. Built with Flask, PostgreSQL, and AI.</small>
+        </div>
+    </footer>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    {% block scripts %}{% endblock %}
+</body>
+</html>

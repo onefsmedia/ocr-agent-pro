@@ -1,0 +1,658 @@
+{% extends "base.html" %}
+
+{% block title %}Lesson Generator - OCR Agent Pro{% endblock %}
+
+{% block content %}
+<!-- Enhanced Lesson Generator Header -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card glass-effect border-0 mb-4 animate__animated animate__fadeInDown">
+            <div class="card-body text-center py-4">
+                <div class="mb-3">
+                    <i class="fas fa-graduation-cap fa-3x gradient-text"></i>
+                </div>
+                <h1 class="gradient-text mb-2">AI Lesson Generator</h1>
+                <p class="text-muted mb-3">Transform documents into engaging educational content</p>
+                <div class="d-flex justify-content-center gap-2">
+                    <span class="badge bg-success px-3 py-2">
+                        <i class="fas fa-robot me-1"></i>AI-Powered
+                    </span>
+                    <span class="badge bg-info px-3 py-2">
+                        <i class="fas fa-file-powerpoint me-1"></i>OnlyOffice
+                    </span>
+                    <span class="badge bg-warning px-3 py-2">
+                        <i class="fas fa-magic me-1"></i>Smart Content
+                    </span>
+                </div>
+                <div class="mt-3">
+                    <a href="{{ url_for('main.dashboard') }}" class="btn btn-outline-primary">
+                        <i class="fas fa-arrow-left me-2"></i>Back to Dashboard
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Enhanced Lesson Generator Content -->
+<div class="container-fluid">
+    <div class="row g-4">
+        <!-- Left Panel: Configuration -->
+        <div class="col-xl-4 col-lg-5">
+            <div class="card border-0 shadow-sm h-100 animate__animated animate__fadeInLeft">
+                <div class="card-header border-0 text-white" style="background: var(--secondary-gradient);">
+                    <h5 class="mb-0 fw-bold">
+                        <i class="fas fa-cog me-2"></i>Lesson Configuration
+                    </h5>
+                    <small class="opacity-75">Setup your lesson parameters</small>
+                </div>
+                <div class="card-body">
+                    <form id="lesson-form">
+                        <!-- Subject Selection -->
+                        <div class="mb-4">
+                            <label for="subject-select" class="form-label fw-bold">
+                                <i class="fas fa-book me-2 text-primary"></i>Subject
+                            </label>
+                            <select class="form-select form-select-lg border-2" id="subject-select" name="subject" required>
+                                <option value="">Choose Subject</option>
+                                <option value="Mathematics">📐 Mathematics</option>
+                                <option value="Physics">⚛️ Physics</option>
+                                <option value="Chemistry">🧪 Chemistry</option>
+                                <option value="Biology">🧬 Biology</option>
+                                                <option value="English">English</option>
+                                                <option value="History">History</option>
+                                                <option value="Geography">Geography</option>
+                                                <option value="Computer Science">Computer Science</option>
+                                            </select>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label for="class-select" class="form-label">Class Level</label>
+                                            <select class="form-select" id="class-select" name="class_level" required>
+                                                <option value="">Select Class</option>
+                                                <option value="Form 1">Form 1</option>
+                                                <option value="Form 2">Form 2</option>
+                                                <option value="Form 3">Form 3</option>
+                                                <option value="Form 4">Form 4</option>
+                                                <option value="Form 5">Form 5</option>
+                                                <option value="Form 6">Form 6</option>
+                                            </select>
+                                        </div>
+                                        <div class="d-flex gap-2">
+                                            <button type="button" class="btn btn-primary" onclick="loadLessons()">
+                                                <i class="fas fa-search"></i> Load Lessons
+                                            </button>
+                                            <button type="button" class="btn btn-outline-info" onclick="checkDocuments()">
+                                                <i class="fas fa-file-alt"></i> Check Documents
+                                            </button>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h6><i class="fas fa-server"></i> OnlyOffice Status</h6>
+                                </div>
+                                <div class="card-body">
+                                    <div id="onlyoffice-status" class="alert alert-secondary">
+                                        <i class="fas fa-clock"></i> Status: Not checked
+                                    </div>
+                                    <div class="d-flex gap-2">
+                                        <button type="button" class="btn btn-info btn-sm" onclick="checkOnlyOfficeStatus()">
+                                            <i class="fas fa-heartbeat"></i> Check Status
+                                        </button>
+                                        <button type="button" class="btn btn-outline-secondary btn-sm" onclick="openOnlyOffice()">
+                                            <i class="fas fa-external-link-alt"></i> Open OnlyOffice
+                                        </button>
+                                    </div>
+                                    <div class="mt-3">
+                                        <small class="text-muted">
+                                            <strong>OnlyOffice URL:</strong> <span id="onlyoffice-url">http://localhost:8000</span>
+                                        </small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Available Lessons -->
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h6><i class="fas fa-list"></i> Available Lessons</h6>
+                                </div>
+                                <div class="card-body">
+                                    <div id="lessons-loading" class="text-center d-none">
+                                        <div class="spinner-border text-primary" role="status">
+                                            <span class="visually-hidden">Loading lessons...</span>
+                                        </div>
+                                        <p class="mt-2">Loading lessons from curriculum...</p>
+                                    </div>
+                                    
+                                    <div id="lessons-container">
+                                        <div class="alert alert-info">
+                                            <i class="fas fa-info-circle"></i> 
+                                            Select a subject and class, then click "Load Lessons" to see available lessons.
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Generated Lesson Notes -->
+                    <div class="row">
+                        <div class="col-12">
+                            <div class="card">
+                                <div class="card-header d-flex justify-content-between align-items-center">
+                                    <h6><i class="fas fa-file-text"></i> Generated Lesson Notes</h6>
+                                    <div>
+                                        <button type="button" class="btn btn-success btn-sm" onclick="generateAllLessons()">
+                                            <i class="fas fa-magic"></i> Generate All Lessons
+                                        </button>
+                                        <button type="button" class="btn btn-outline-primary btn-sm" onclick="refreshGeneratedLessons()">
+                                            <i class="fas fa-sync"></i> Refresh
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="card-body">
+                                    <div id="generation-progress" class="d-none">
+                                        <div class="progress mb-3">
+                                            <div id="progress-bar" class="progress-bar progress-bar-striped progress-bar-animated" 
+                                                 role="progressbar" style="width: 0%" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">
+                                                0%
+                                            </div>
+                                        </div>
+                                        <div id="generation-status" class="text-center">
+                                            <small class="text-muted">Preparing lesson generation...</small>
+                                        </div>
+                                    </div>
+                                    
+                                    <div id="generated-lessons" class="table-responsive">
+                                        <table class="table table-striped">
+                                            <thead>
+                                                <tr>
+                                                    <th>Lesson</th>
+                                                    <th>Status</th>
+                                                    <th>Generated</th>
+                                                    <th>Actions</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="lessons-table-body">
+                                                <tr>
+                                                    <td colspan="4" class="text-center text-muted">
+                                                        No lessons generated yet. Load lessons first.
+                                                    </td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Lesson Note Generator JavaScript Functions
+
+let currentSubject = '';
+let currentClass = '';
+let availableLessons = [];
+let generatedLessons = new Map();
+
+// Check OnlyOffice server status
+function checkOnlyOfficeStatus() {
+    fetch('/api/onlyoffice/status')
+    .then(response => response.json())
+    .then(data => {
+        const statusDiv = document.getElementById('onlyoffice-status');
+        statusDiv.classList.remove('alert-success', 'alert-danger', 'alert-warning', 'alert-secondary');
+        
+        if (data.success && data.status === 'online') {
+            statusDiv.classList.add('alert-success');
+            statusDiv.innerHTML = '<i class="fas fa-check-circle"></i> OnlyOffice Server: Online';
+        } else {
+            statusDiv.classList.add('alert-danger');
+            statusDiv.innerHTML = `<i class="fas fa-exclamation-triangle"></i> OnlyOffice Server: ${data.message}`;
+        }
+        
+        // Update URL display
+        if (data.url) {
+            document.getElementById('onlyoffice-url').textContent = data.url;
+        }
+    })
+    .catch(error => {
+        console.error('Error checking OnlyOffice status:', error);
+        const statusDiv = document.getElementById('onlyoffice-status');
+        statusDiv.classList.remove('alert-success', 'alert-warning', 'alert-secondary');
+        statusDiv.classList.add('alert-danger');
+        statusDiv.innerHTML = '<i class="fas fa-times-circle"></i> OnlyOffice Server: Connection Error';
+    });
+}
+
+// Open OnlyOffice in new tab
+function openOnlyOffice() {
+    const url = document.getElementById('onlyoffice-url').textContent;
+    window.open(url, '_blank');
+}
+
+// Check available documents for subject/class
+function checkDocuments() {
+    const subject = document.getElementById('subject-select').value;
+    const classLevel = document.getElementById('class-select').value;
+    
+    if (!subject || !classLevel) {
+        showNotification('Please select both subject and class level', 'warning');
+        return;
+    }
+    
+    fetch('/api/lessons/check-documents', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            subject: subject,
+            class_level: classLevel
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            let message = `Documents found:\n`;
+            message += `- ${data.documents_count} textbook documents\n`;
+            message += `- ${data.curriculum_count} curriculum documents\n`;
+            message += `- ${data.progression_count} progression documents`;
+            
+            showNotification(message, 'info');
+        } else {
+            showNotification('No documents found for this subject/class combination', 'warning');
+        }
+    })
+    .catch(error => {
+        console.error('Error checking documents:', error);
+        showNotification('Error checking documents', 'error');
+    });
+}
+
+// Load lessons for selected subject/class
+function loadLessons() {
+    const subject = document.getElementById('subject-select').value;
+    const classLevel = document.getElementById('class-select').value;
+    
+    if (!subject || !classLevel) {
+        showNotification('Please select both subject and class level', 'warning');
+        return;
+    }
+    
+    currentSubject = subject;
+    currentClass = classLevel;
+    
+    // Show loading
+    document.getElementById('lessons-loading').classList.remove('d-none');
+    document.getElementById('lessons-container').innerHTML = '';
+    
+    fetch('/api/lessons/load', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            subject: subject,
+            class_level: classLevel
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        document.getElementById('lessons-loading').classList.add('d-none');
+        
+        if (data.success && data.lessons && data.lessons.length > 0) {
+            availableLessons = data.lessons;
+            displayLessons(data.lessons);
+        } else {
+            document.getElementById('lessons-container').innerHTML = `
+                <div class="alert alert-warning">
+                    <i class="fas fa-exclamation-triangle"></i> 
+                    No lessons found for ${subject} - ${classLevel}. 
+                    Please ensure documents are uploaded with progression data.
+                </div>
+            `;
+        }
+    })
+    .catch(error => {
+        console.error('Error loading lessons:', error);
+        document.getElementById('lessons-loading').classList.add('d-none');
+        document.getElementById('lessons-container').innerHTML = `
+            <div class="alert alert-danger">
+                <i class="fas fa-times-circle"></i> 
+                Error loading lessons. Please try again.
+            </div>
+        `;
+    });
+}
+
+// Display lessons in the container
+function displayLessons(lessons) {
+    const container = document.getElementById('lessons-container');
+    
+    let html = `
+        <div class="alert alert-success">
+            <i class="fas fa-check-circle"></i> 
+            Found ${lessons.length} lessons for ${currentSubject} - ${currentClass}
+        </div>
+        <div class="row">
+    `;
+    
+    lessons.forEach((lesson, index) => {
+        const lessonTitle = lesson.lesson || `Lesson ${index + 1}`;
+        html += `
+            <div class="col-md-6 mb-3">
+                <div class="card border-primary">
+                    <div class="card-body">
+                        <h6 class="card-title">${lessonTitle}</h6>
+                        <div class="d-flex gap-2">
+                            <button type="button" class="btn btn-primary btn-sm" 
+                                    onclick="generateSingleLesson(${index})">
+                                <i class="fas fa-magic"></i> Generate
+                            </button>
+                            <button type="button" class="btn btn-outline-info btn-sm" 
+                                    onclick="previewLesson(${index})">
+                                <i class="fas fa-eye"></i> Preview
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+    });
+    
+    html += '</div>';
+    container.innerHTML = html;
+}
+
+// Generate a single lesson note
+function generateSingleLesson(index) {
+    if (index >= availableLessons.length) {
+        showNotification('Invalid lesson index', 'error');
+        return;
+    }
+    
+    const lesson = availableLessons[index];
+    const lessonTitle = lesson.lesson || `Lesson ${index + 1}`;
+    
+    showNotification(`Generating lesson note for: ${lessonTitle}`, 'info');
+    
+    fetch('/api/lessons/generate', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            subject: currentSubject,
+            class_level: currentClass,
+            lesson: lesson
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showNotification(`Lesson note generated successfully: ${data.title}`, 'success');
+            
+            // Store in local map
+            generatedLessons.set(index, {
+                ...data,
+                lesson_title: lessonTitle,
+                generated_at: new Date().toISOString()
+            });
+            
+            // Refresh the generated lessons table
+            updateGeneratedLessonsTable();
+            
+            // Offer to open in OnlyOffice
+            if (confirm('Lesson note generated! Would you like to open it in OnlyOffice?')) {
+                window.open(data.edit_url, '_blank');
+            }
+        } else {
+            showNotification(`Failed to generate lesson note: ${data.error}`, 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Error generating lesson:', error);
+        showNotification('Error generating lesson note', 'error');
+    });
+}
+
+// Generate all lessons
+function generateAllLessons() {
+    if (availableLessons.length === 0) {
+        showNotification('No lessons loaded. Please load lessons first.', 'warning');
+        return;
+    }
+    
+    if (!confirm(`Generate ${availableLessons.length} lesson notes? This may take several minutes.`)) {
+        return;
+    }
+    
+    // Show progress
+    document.getElementById('generation-progress').classList.remove('d-none');
+    updateProgress(0, `Starting generation of ${availableLessons.length} lessons...`);
+    
+    // Generate lessons sequentially
+    generateLessonsSequentially(0);
+}
+
+// Generate lessons one by one to avoid API rate limits
+function generateLessonsSequentially(index) {
+    if (index >= availableLessons.length) {
+        // All done
+        updateProgress(100, 'All lesson notes generated successfully!');
+        setTimeout(() => {
+            document.getElementById('generation-progress').classList.add('d-none');
+        }, 3000);
+        return;
+    }
+    
+    const lesson = availableLessons[index];
+    const lessonTitle = lesson.lesson || `Lesson ${index + 1}`;
+    const progress = Math.round((index / availableLessons.length) * 100);
+    
+    updateProgress(progress, `Generating: ${lessonTitle}`);
+    
+    fetch('/api/lessons/generate', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            subject: currentSubject,
+            class_level: currentClass,
+            lesson: lesson
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Store in local map
+            generatedLessons.set(index, {
+                ...data,
+                lesson_title: lessonTitle,
+                generated_at: new Date().toISOString()
+            });
+            
+            // Update table
+            updateGeneratedLessonsTable();
+        }
+        
+        // Continue with next lesson
+        setTimeout(() => generateLessonsSequentially(index + 1), 2000); // 2 second delay
+    })
+    .catch(error => {
+        console.error(`Error generating lesson ${index}:`, error);
+        // Continue with next lesson even if this one failed
+        setTimeout(() => generateLessonsSequentially(index + 1), 1000);
+    });
+}
+
+// Update progress bar
+function updateProgress(percent, message) {
+    const progressBar = document.getElementById('progress-bar');
+    const statusDiv = document.getElementById('generation-status');
+    
+    progressBar.style.width = `${percent}%`;
+    progressBar.setAttribute('aria-valuenow', percent);
+    progressBar.textContent = `${percent}%`;
+    statusDiv.innerHTML = `<small class="text-muted">${message}</small>`;
+}
+
+// Update the generated lessons table
+function updateGeneratedLessonsTable() {
+    const tbody = document.getElementById('lessons-table-body');
+    
+    if (generatedLessons.size === 0) {
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="4" class="text-center text-muted">
+                    No lessons generated yet.
+                </td>
+            </tr>
+        `;
+        return;
+    }
+    
+    let html = '';
+    generatedLessons.forEach((lesson, index) => {
+        const generatedDate = new Date(lesson.generated_at).toLocaleString();
+        html += `
+            <tr>
+                <td>
+                    <strong>${lesson.lesson_title}</strong>
+                    <br><small class="text-muted">${currentSubject} - ${currentClass}</small>
+                </td>
+                <td>
+                    <span class="badge bg-success">Generated</span>
+                </td>
+                <td>
+                    <small>${generatedDate}</small>
+                </td>
+                <td>
+                    <div class="btn-group" role="group">
+                        <button type="button" class="btn btn-primary btn-sm" 
+                                onclick="openLessonInOnlyOffice('${lesson.edit_url}')">
+                            <i class="fas fa-edit"></i> Edit
+                        </button>
+                        <button type="button" class="btn btn-outline-secondary btn-sm" 
+                                onclick="downloadLesson('${lesson.download_url}')">
+                            <i class="fas fa-download"></i> Download
+                        </button>
+                        <button type="button" class="btn btn-outline-info btn-sm" 
+                                onclick="viewLesson('${lesson.view_url}')">
+                            <i class="fas fa-eye"></i> View
+                        </button>
+                    </div>
+                </td>
+            </tr>
+        `;
+    });
+    
+    tbody.innerHTML = html;
+}
+
+// Open lesson in OnlyOffice for editing
+function openLessonInOnlyOffice(editUrl) {
+    window.open(editUrl, '_blank');
+}
+
+// Download lesson document
+function downloadLesson(downloadUrl) {
+    window.open(downloadUrl, '_blank');
+}
+
+// View lesson in read-only mode
+function viewLesson(viewUrl) {
+    window.open(viewUrl, '_blank');
+}
+
+// Refresh generated lessons from server
+function refreshGeneratedLessons() {
+    if (!currentSubject || !currentClass) {
+        showNotification('No subject/class selected', 'warning');
+        return;
+    }
+    
+    fetch('/api/lessons/generated', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            subject: currentSubject,
+            class_level: currentClass
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success && data.lessons) {
+            // Update local storage
+            generatedLessons.clear();
+            data.lessons.forEach((lesson, index) => {
+                generatedLessons.set(index, lesson);
+            });
+            
+            updateGeneratedLessonsTable();
+            showNotification(`Refreshed ${data.lessons.length} generated lessons`, 'success');
+        } else {
+            showNotification('No generated lessons found', 'info');
+        }
+    })
+    .catch(error => {
+        console.error('Error refreshing lessons:', error);
+        showNotification('Error refreshing lessons', 'error');
+    });
+}
+
+// Preview lesson content (for debugging)
+function previewLesson(index) {
+    if (index >= availableLessons.length) {
+        return;
+    }
+    
+    const lesson = availableLessons[index];
+    const content = lesson.lesson || 'No content available';
+    
+    // Show in modal or alert for now
+    alert(`Lesson Preview:\n\n${content}`);
+}
+
+// Auto-check OnlyOffice status on page load
+document.addEventListener('DOMContentLoaded', function() {
+    setTimeout(checkOnlyOfficeStatus, 1000);
+});
+
+// Utility function for notifications (assuming it exists)
+function showNotification(message, type) {
+    // Implementation depends on your notification system
+    console.log(`${type.toUpperCase()}: ${message}`);
+    
+    // For now, use browser alerts
+    if (type === 'error') {
+        alert(`Error: ${message}`);
+    } else if (type === 'success') {
+        alert(`Success: ${message}`);
+    } else if (type === 'warning') {
+        alert(`Warning: ${message}`);
+    } else {
+        alert(`Info: ${message}`);
+    }
+}
+</script>
+
+{% endblock %}

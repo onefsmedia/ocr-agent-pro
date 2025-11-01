@@ -1,0 +1,184 @@
+version: '3.8'
+
+services:
+  # PostgreSQL database
+  postgres:
+    image: postgres:16
+    container_name: ocr_postgres
+    environment:
+      POSTGRES_DB: ocr_agent
+      POSTGRES_USER: renderman
+      POSTGRES_PASSWORD: Master@2025
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./docker/init.sql:/docker-entrypoint-initdb.d/init.sql
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U renderman -d ocr_agent"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - ocr_network
+
+  # Redis for Celery (background tasks)
+  redis:
+    image: redis:7-alpine
+    container_name: ocr_redis
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - ocr_network
+
+  # OCR Agent Application
+  ocr_agent:
+    build: .
+    container_name: ocr_agent_app
+    environment:
+      - FLASK_ENV=production
+      - DATABASE_URL=postgresql://renderman:Master@2025@postgres:5432/ocr_agent
+      - REDIS_URL=redis://redis:6379
+      - SECRET_KEY=your-production-secret-key-change-this
+      - TESSERACT_PATH=/usr/bin/tesseract
+      - USE_DEEPSEEK_OCR=true
+      - DEEPSEEK_OCR_URL=http://deepseek-ocr
+      - DEEPSEEK_OCR_PATH=/app/deepseek-ocr
+      - DEEPSEEK_OCR_ENV=production
+      - OLLAMA_BASE_URL=http://ollama:11434
+      - LM_STUDIO_BASE_URL=http://host.containers.internal:1234
+      - ONLYOFFICE_URL=http://onlyoffice_server
+      - ONLYOFFICE_STORAGE_URL=http://ocr_agent_app:5000/storage
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+    volumes:
+      - ./uploads:/app/uploads
+      - ./logs:/app/logs
+    ports:
+      - "5000:5000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - ocr_network
+
+  # Celery Worker (background processing)
+  celery_worker:
+    build: .
+    container_name: ocr_celery_worker
+    command: celery -A app.celery worker --loglevel=info
+    environment:
+      - FLASK_ENV=production
+      - DATABASE_URL=postgresql://ocr_user:ocr_password@postgres:5432/ocr_agent
+      - REDIS_URL=redis://redis:6379
+      - SECRET_KEY=your-production-secret-key-change-this
+      - TESSERACT_PATH=/usr/bin/tesseract
+    volumes:
+      - ./uploads:/app/uploads
+      - ./logs:/app/logs
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - ocr_network
+
+  # Ollama (Local LLM)
+  ollama:
+    image: ollama/ollama:latest
+    container_name: ocr_ollama
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    environment:
+      - OLLAMA_HOST=0.0.0.0
+    networks:
+      - ocr_network
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    # For CPU-only deployment, remove the deploy section above
+
+  # Nginx (Optional - for production deployment)
+  nginx:
+    image: nginx:alpine
+    container_name: ocr_nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./docker/nginx.conf:/etc/nginx/nginx.conf
+      - ./docker/ssl:/etc/nginx/ssl
+    depends_on:
+      - ocr_agent
+    networks:
+      - ocr_network
+    profiles:
+      - production
+
+  # OnlyOffice Document Server
+  onlyoffice:
+    image: onlyoffice/documentserver:latest
+    container_name: onlyoffice_server
+    environment:
+      - JWT_ENABLED=false
+      - JWT_SECRET=your-onlyoffice-secret
+    ports:
+      - "8000:80"
+    volumes:
+      - onlyoffice_data:/var/www/onlyoffice/Data
+      - onlyoffice_logs:/var/log/onlyoffice
+    networks:
+      - ocr_network
+    restart: unless-stopped
+
+  # DeepSeek OCR Service (connects to local installation)
+  deepseek-ocr:
+    build:
+      context: ./docker/deepseek-ocr
+      dockerfile: Dockerfile
+    container_name: deepseek_ocr_service
+    environment:
+      - DEEPSEEK_OCR_PATH=/app/deepseek-ocr
+      - DEEPSEEK_OCR_LOCAL_PATH=/host/d/AIWORKS/DeepSeek-OCR/DeepSeek-OCR/DeepSeek-OCR-master/DeepSeek-OCR-vllm
+      - CONDA_ENV=vllm_env
+      - HOST_IP=${HOST_IP:-host.docker.internal}
+    ports:
+      - "8001:8001"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      # Comment out volume mount for now to avoid path issues
+      # - D:\AIWORKS\DeepSeek-OCR\DeepSeek-OCR\DeepSeek-OCR-master\DeepSeek-OCR-vllm:/app/deepseek-ocr:ro
+    networks:
+      - ocr_network
+    restart: unless-stopped
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+volumes:
+  postgres_data:
+  ollama_data:
+  onlyoffice_data:
+  onlyoffice_logs:
+
+networks:
+  ocr_network:
+    driver: bridge

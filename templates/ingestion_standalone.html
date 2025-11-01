@@ -1,0 +1,317 @@
+{% extends "base.html" %}
+
+{% block title %}Document Upload - OCR Agent Pro{% endblock %}
+
+{% block content %}
+<div class="container-md">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <!-- Header Section -->
+            <div class="text-center mb-4">
+                <i class="fas fa-cloud-upload-alt fa-3x text-primary mb-3"></i>
+                <h2 class="fw-bold text-primary">Document Upload</h2>
+                <p class="lead text-muted">Upload documents for intelligent OCR processing and analysis</p>
+            </div>
+
+            <!-- Upload Card -->
+            <div class="card shadow-lg border-0">
+                <div class="card-header bg-primary text-white text-center py-3">
+                    <h5 class="mb-0">
+                        <i class="fas fa-file-upload me-2"></i>Upload New Document
+                    </h5>
+                </div>
+                <div class="card-body p-4 bg-dark text-white">
+                    <form id="upload-form" enctype="multipart/form-data">
+                        <div class="mb-4">
+                            <label for="document-name" class="form-label fw-bold text-white">
+                                <i class="fas fa-tag me-2 text-primary"></i>Document Name
+                            </label>
+                            <input type="text" class="form-control form-control-lg" 
+                                   id="document-name" name="document_name" 
+                                   placeholder="Enter a descriptive name for your document">
+                            <div class="form-text text-light">Give your document a meaningful name for easy identification</div>
+                        </div>
+                        
+                        <div class="mb-4">
+                            <label for="file-input" class="form-label fw-bold text-white">
+                                <i class="fas fa-file me-2 text-primary"></i>Select Document
+                            </label>
+                            <div class="upload-area border-2 border-dashed border-primary rounded p-4 text-center bg-light">
+                                <input type="file" class="form-control d-none" id="file-input" 
+                                       name="file" accept=".pdf,.png,.jpg,.jpeg,.tiff,.bmp" required>
+                                <div class="upload-content">
+                                    <i class="fas fa-cloud-upload-alt fa-3x text-primary mb-3"></i>
+                                    <h6 class="fw-bold text-dark">Drag & Drop or Click to Upload</h6>
+                                    <p class="text-muted mb-2">Choose a document from your computer</p>
+                                    <button type="button" class="btn btn-outline-primary" onclick="document.getElementById('file-input').click()">
+                                        <i class="fas fa-folder-open me-2"></i>Browse Files
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="form-text mt-2 text-light">
+                                <i class="fas fa-info-circle me-1 text-info"></i>
+                                <strong>Supported formats:</strong> PDF, PNG, JPG, JPEG, TIFF, BMP (Max 50MB)
+                            </div>
+                        </div>
+
+                        <!-- Selected File Display -->
+                        <div id="file-selected" class="mb-4" style="display: none;">
+                            <div class="alert alert-success d-flex align-items-center">
+                                <i class="fas fa-check-circle fa-lg me-3 text-success"></i>
+                                <div class="flex-grow-1">
+                                    <strong class="text-dark">File Selected:</strong>
+                                    <span id="file-name" class="text-dark"></span>
+                                    <br>
+                                    <small class="text-dark">Size: <span id="file-size"></span></small>
+                                </div>
+                                <button type="button" class="btn btn-sm btn-outline-secondary" onclick="clearFile()">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-primary btn-lg">
+                                <i class="fas fa-magic me-2"></i>Upload & Process with OCR
+                            </button>
+                        </div>
+                    </form>
+
+                    <!-- Upload Progress -->
+                    <div id="upload-progress" class="mt-4" style="display: none;">
+                        <div class="text-center mb-3">
+                            <div class="spinner-border text-primary" role="status">
+                                <span class="visually-hidden">Processing...</span>
+                            </div>
+                        </div>
+                        <div class="progress mb-2" style="height: 8px;">
+                            <div class="progress-bar progress-bar-striped progress-bar-animated bg-primary" 
+                                 role="progressbar" style="width: 0%"></div>
+                        </div>
+                        <div class="text-center">
+                            <small class="text-light">Processing document with OCR...</small>
+                        </div>
+                    </div>
+
+                    <!-- Upload Result -->
+                    <div id="upload-result" class="mt-4"></div>
+                </div>
+            </div>
+
+            <!-- Features Section -->
+            <div class="row mt-5">
+                <div class="col-md-4">
+                    <div class="text-center p-3">
+                        <i class="fas fa-eye fa-2x text-primary mb-2"></i>
+                        <h6 class="fw-bold">Smart OCR</h6>
+                        <small class="text-muted">Advanced text recognition with Tesseract & DeepSeek</small>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="text-center p-3">
+                        <i class="fas fa-search fa-2x text-success mb-2"></i>
+                        <h6 class="fw-bold">Vector Search</h6>
+                        <small class="text-muted">Semantic search across all document content</small>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="text-center p-3">
+                        <i class="fas fa-robot fa-2x text-info mb-2"></i>
+                        <h6 class="fw-bold">AI Analysis</h6>
+                        <small class="text-muted">Intelligent document analysis and insights</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.upload-area {
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+
+.upload-area:hover {
+    border-color: #0d6efd !important;
+    background-color: #f0f8ff !important;
+}
+
+.upload-area.dragover {
+    border-color: #0d6efd !important;
+    background-color: #e7f3ff !important;
+    transform: scale(1.02);
+}
+</style>
+
+<script>
+// Enhanced file upload with drag and drop
+const uploadArea = document.querySelector('.upload-area');
+const fileInput = document.getElementById('file-input');
+const fileSelected = document.getElementById('file-selected');
+const fileName = document.getElementById('file-name');
+const fileSize = document.getElementById('file-size');
+
+// Click to upload
+uploadArea.addEventListener('click', () => {
+    fileInput.click();
+});
+
+// Drag and drop functionality
+uploadArea.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    uploadArea.classList.add('dragover');
+});
+
+uploadArea.addEventListener('dragleave', () => {
+    uploadArea.classList.remove('dragover');
+});
+
+uploadArea.addEventListener('drop', (e) => {
+    e.preventDefault();
+    uploadArea.classList.remove('dragover');
+    
+    const files = e.dataTransfer.files;
+    if (files.length > 0) {
+        fileInput.files = files;
+        displaySelectedFile(files[0]);
+    }
+});
+
+// File selection handler
+fileInput.addEventListener('change', (e) => {
+    if (e.target.files.length > 0) {
+        displaySelectedFile(e.target.files[0]);
+    }
+});
+
+function displaySelectedFile(file) {
+    fileName.textContent = file.name;
+    fileSize.textContent = formatFileSize(file.size);
+    fileSelected.style.display = 'block';
+    
+    // Update upload area
+    uploadArea.innerHTML = `
+        <div class="upload-content">
+            <i class="fas fa-check-circle fa-3x text-success mb-3"></i>
+            <h6 class="fw-bold text-success">File Ready for Upload</h6>
+            <p class="text-muted mb-2">${file.name}</p>
+            <button type="button" class="btn btn-outline-primary btn-sm" onclick="document.getElementById('file-input').click()">
+                <i class="fas fa-exchange-alt me-2"></i>Change File
+            </button>
+        </div>
+    `;
+}
+
+function clearFile() {
+    fileInput.value = '';
+    fileSelected.style.display = 'none';
+    
+    // Reset upload area
+    uploadArea.innerHTML = `
+        <div class="upload-content">
+            <i class="fas fa-cloud-upload-alt fa-3x text-primary mb-3"></i>
+            <h6 class="fw-bold text-dark">Drag & Drop or Click to Upload</h6>
+            <p class="text-muted mb-2">Choose a document from your computer</p>
+            <button type="button" class="btn btn-outline-primary" onclick="document.getElementById('file-input').click()">
+                <i class="fas fa-folder-open me-2"></i>Browse Files
+            </button>
+        </div>
+    `;
+}
+
+function formatFileSize(bytes) {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+}
+
+// Form submission handler
+document.getElementById('upload-form').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(this);
+    const fileInput = document.getElementById('file-input');
+    const nameInput = document.getElementById('document-name');
+    const progressDiv = document.getElementById('upload-progress');
+    const resultDiv = document.getElementById('upload-result');
+    
+    // Validate inputs
+    if (!fileInput.files[0]) {
+        showAlert('Please select a file to upload.', 'warning');
+        return;
+    }
+    
+    // Auto-generate name if not provided
+    if (!nameInput.value.trim()) {
+        const fileName = fileInput.files[0].name;
+        const nameWithoutExt = fileName.substring(0, fileName.lastIndexOf('.'));
+        nameInput.value = nameWithoutExt;
+        formData.set('document_name', nameWithoutExt);
+    }
+    
+    // Show progress
+    progressDiv.style.display = 'block';
+    resultDiv.innerHTML = '';
+    
+    // Upload file
+    fetch('/api/upload', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        progressDiv.style.display = 'none';
+        
+        if (data.success) {
+            resultDiv.innerHTML = `
+                <div class="alert alert-success">
+                    <h6><i class="fas fa-check-circle me-2"></i>Upload Successful!</h6>
+                    <p class="mb-2">${data.message}</p>
+                    <div class="d-flex gap-2">
+                        <a href="/panel/table" class="btn btn-sm btn-outline-success">
+                            <i class="fas fa-table me-1"></i>View Documents
+                        </a>
+                        <a href="/" class="btn btn-sm btn-outline-primary">
+                            <i class="fas fa-home me-1"></i>Dashboard
+                        </a>
+                    </div>
+                </div>
+            `;
+            
+            // Reset form
+            this.reset();
+            clearFile();
+        } else {
+            resultDiv.innerHTML = `
+                <div class="alert alert-danger">
+                    <h6><i class="fas fa-exclamation-triangle me-2"></i>Upload Failed</h6>
+                    <p class="mb-0">${data.error || 'An error occurred during upload.'}</p>
+                </div>
+            `;
+        }
+    })
+    .catch(error => {
+        progressDiv.style.display = 'none';
+        resultDiv.innerHTML = `
+            <div class="alert alert-danger">
+                <h6><i class="fas fa-exclamation-triangle me-2"></i>Upload Error</h6>
+                <p class="mb-0">Network error occurred. Please try again.</p>
+            </div>
+        `;
+    });
+});
+
+function showAlert(message, type) {
+    const resultDiv = document.getElementById('upload-result');
+    resultDiv.innerHTML = `
+        <div class="alert alert-${type} alert-dismissible fade show">
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    `;
+}
+</script>
+{% endblock %}

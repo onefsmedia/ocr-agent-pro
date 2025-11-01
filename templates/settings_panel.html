@@ -1,0 +1,1081 @@
+{% extends "base.html" %}
+
+{% block title %}System Settings - OCR Agent Pro{% endblock %}
+
+{% block content %}
+<!-- Enhanced Header -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card glass-effect border-0 mb-4 animate__animated animate__fadeInDown">
+            <div class="card-body text-center py-4">
+                <div class="mb-3">
+                    <i class="fas fa-cogs fa-3x gradient-text"></i>
+                </div>
+                <h1 class="gradient-text mb-2">System Configuration</h1>
+                <p class="text-muted mb-3">Customize your OCR Agent experience</p>
+                <a href="{{ url_for('main.dashboard') }}" class="btn btn-outline-primary">
+                    <i class="fas fa-arrow-left me-2"></i>Back to Dashboard
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Enhanced Settings Tabs -->
+<div class="card border-0 shadow-sm">
+    <div class="card-header border-0 bg-white">
+        <ul class="nav nav-pills nav-fill" id="settingsTabs" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link active rounded-pill mx-1" id="database-tab" data-bs-toggle="tab" data-bs-target="#database" type="button" role="tab">
+                    <i class="fas fa-database me-2"></i>Database
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link rounded-pill mx-1" id="ocr-tab" data-bs-toggle="tab" data-bs-target="#ocr" type="button" role="tab">
+                    <i class="fas fa-eye me-2"></i>OCR Settings
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link rounded-pill mx-1" id="onlyoffice-tab" data-bs-toggle="tab" data-bs-target="#onlyoffice" type="button" role="tab">
+            <i class="fas fa-file-office"></i> OnlyOffice
+        </button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link" id="ai-tab" data-bs-toggle="tab" data-bs-target="#ai" type="button" role="tab">
+            <i class="fas fa-robot"></i> AI/LLM
+        </button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link" id="system-tab" data-bs-toggle="tab" data-bs-target="#system" type="button" role="tab">
+            <i class="fas fa-server"></i> System
+        </button>
+    </li>
+</ul>
+
+<div class="tab-content" id="settingsTabContent">
+    
+    <!-- Database Settings -->
+    <div class="tab-pane fade show active" id="database" role="tabpanel">
+        <div class="card mt-3">
+            <div class="card-header">
+                <h5><i class="fas fa-database"></i> Database Configuration</h5>
+            </div>
+            <div class="card-body">
+                <form id="database-form">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="db-host" class="form-label">Database Host</label>
+                                <input type="text" class="form-control" id="db-host" name="database_host" 
+                                       value="{{ settings.get('database_host', 'localhost') }}">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="db-port" class="form-label">Port</label>
+                                <input type="number" class="form-control" id="db-port" name="database_port" 
+                                       value="{{ settings.get('database_port', '5432') }}">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="db-name" class="form-label">Database Name</label>
+                                <input type="text" class="form-control" id="db-name" name="database_name" 
+                                       value="{{ settings.get('database_name', 'ocr_agent') }}">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="db-user" class="form-label">Username</label>
+                                <input type="text" class="form-control" id="db-user" name="database_user" 
+                                       value="{{ settings.get('database_user', 'ocr_user') }}">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="db-password" class="form-label">Password</label>
+                                <input type="password" class="form-control" id="db-password" name="database_password" 
+                                       placeholder="Enter new password to change">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">Connection Status</label>
+                                <div class="form-control-plaintext">
+                                    <span id="db-connection-status" class="badge bg-secondary">Testing...</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="d-flex gap-2">
+                        <button type="button" class="btn btn-outline-info" onclick="testDatabaseConnection()">
+                            <i class="fas fa-plug"></i> Test Connection
+                        </button>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save"></i> Save Database Settings
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- OCR Settings -->
+    <div class="tab-pane fade" id="ocr" role="tabpanel">
+        <div class="card mt-3">
+            <div class="card-header">
+                <h5><i class="fas fa-eye"></i> OCR Configuration</h5>
+            </div>
+            <div class="card-body">
+                <form id="ocr-form">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6><i class="fas fa-brain"></i> DeepSeek OCR (Primary)</h6>
+                            
+                            <!-- Local DeepSeek OCR -->
+                            <div class="card mb-3">
+                                <div class="card-header bg-light">
+                                    <h6 class="mb-0"><i class="fas fa-desktop"></i> Local Installation</h6>
+                                </div>
+                                <div class="card-body">
+                                    <div class="mb-3">
+                                        <div class="form-check form-switch">
+                                            <input class="form-check-input" type="checkbox" id="use-deepseek" name="use_deepseek_ocr" 
+                                                   {{ 'checked' if settings.get('use_deepseek_ocr', True) else '' }}>
+                                            <label class="form-check-label" for="use-deepseek">
+                                                Enable DeepSeek OCR
+                                            </label>
+                                        </div>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="deepseek-path" class="form-label">Installation Path</label>
+                                        <input type="text" class="form-control" id="deepseek-path" name="deepseek_path" 
+                                               value="{{ settings.get('deepseek_path', 'D:\\AIWORKS\\DeepSeek-OCR\\DeepSeek-OCR\\DeepSeek-OCR-master\\DeepSeek-OCR-vllm') }}">
+                                        <div class="form-text">Path to local DeepSeek OCR installation</div>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="deepseek-env" class="form-label">Conda Environment</label>
+                                        <input type="text" class="form-control" id="deepseek-env" name="deepseek_env" 
+                                               value="{{ settings.get('deepseek_env', 'vllm_env') }}">
+                                        <div class="form-text">Name of the conda environment</div>
+                                    </div>
+                                    <div class="d-flex gap-2 mb-3">
+                                        <button type="button" class="btn btn-success btn-sm" onclick="startDeepSeekOCR()">
+                                            <i class="fas fa-play"></i> Start Server
+                                        </button>
+                                        <button type="button" class="btn btn-warning btn-sm" onclick="stopDeepSeekOCR()">
+                                            <i class="fas fa-stop"></i> Stop Server
+                                        </button>
+                                        <button type="button" class="btn btn-info btn-sm" onclick="checkDeepSeekStatus()">
+                                            <i class="fas fa-heartbeat"></i> Check Status
+                                        </button>
+                                    </div>
+                                    <div id="deepseek-status" class="alert alert-secondary mb-0">
+                                        <i class="fas fa-clock"></i> Status: Not checked
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- API Fallback -->
+                            <div class="card mb-3">
+                                <div class="card-header bg-light">
+                                    <h6 class="mb-0"><i class="fas fa-cloud"></i> API Fallback</h6>
+                                </div>
+                                <div class="card-body">
+                                    <div class="mb-3">
+                                        <label for="deepseek-url" class="form-label">DeepSeek OCR URL</label>
+                                        <input type="url" class="form-control" id="deepseek-url" name="deepseek_ocr_url" 
+                                               value="{{ settings.get('deepseek_ocr_url', 'http://localhost:8001') }}">
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="deepseek-api-key" class="form-label">API Key (if required)</label>
+                                        <input type="password" class="form-control" id="deepseek-api-key" name="deepseek_api_key" 
+                                               placeholder="Enter API key if required">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <h6><i class="fas fa-font"></i> Tesseract OCR (Fallback)</h6>
+                            <div class="card">
+                                <div class="card-body">
+                                    <div class="mb-3">
+                                        <label for="tesseract-path" class="form-label">Tesseract Path</label>
+                                        <input type="text" class="form-control" id="tesseract-path" name="tesseract_path" 
+                                               value="{{ settings.get('tesseract_path', '/usr/bin/tesseract') }}">
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="tesseract-languages" class="form-label">Languages</label>
+                                        <input type="text" class="form-control" id="tesseract-languages" name="tesseract_languages" 
+                                               value="{{ settings.get('tesseract_languages', 'eng') }}" 
+                                               placeholder="eng,fra,deu,spa">
+                                        <div class="form-text">Comma-separated language codes</div>
+                                    </div>
+                                    <div class="d-flex gap-2">
+                                        <button type="button" class="btn btn-outline-info btn-sm" onclick="testTesseractOCR()">
+                                            <i class="fas fa-vial"></i> Test Tesseract
+                                        </button>
+                                        <button type="button" class="btn btn-outline-secondary btn-sm" onclick="listTesseractLanguages()">
+                                            <i class="fas fa-list"></i> List Languages
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <hr>
+                    <div class="d-flex gap-2">
+                        <button type="button" class="btn btn-outline-primary" onclick="testOCRPipeline()">
+                            <i class="fas fa-cogs"></i> Test Full OCR Pipeline
+                        </button>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save"></i> Save OCR Settings
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- OnlyOffice Settings -->
+    <div class="tab-pane fade" id="onlyoffice" role="tabpanel">
+        <div class="card mt-3">
+            <div class="card-header">
+                <h5><i class="fas fa-file-office"></i> OnlyOffice Configuration</h5>
+            </div>
+            <div class="card-body">
+                <form id="onlyoffice-form">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="onlyoffice-url" class="form-label">OnlyOffice Server URL</label>
+                                <input type="url" class="form-control" id="onlyoffice-url" name="onlyoffice_url" 
+                                       value="{{ settings.get('onlyoffice_url', 'http://localhost:8000') }}">
+                            </div>
+                            <div class="mb-3">
+                                <label for="onlyoffice-secret" class="form-label">JWT Secret</label>
+                                <input type="password" class="form-control" id="onlyoffice-secret" name="onlyoffice_secret" 
+                                       placeholder="Enter JWT secret for security">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="onlyoffice-token" class="form-label">API Token</label>
+                                <input type="password" class="form-control" id="onlyoffice-token" name="onlyoffice_token" 
+                                       placeholder="Enter API token if required">
+                            </div>
+                            <div class="mb-3">
+                                <label for="onlyoffice-storage" class="form-label">Storage URL</label>
+                                <input type="url" class="form-control" id="onlyoffice-storage" name="onlyoffice_storage_url" 
+                                       value="{{ settings.get('onlyoffice_storage_url', 'http://localhost:5000/storage') }}">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" id="auto-sync" name="auto_sync_onlyoffice" 
+                                   {{ 'checked' if settings.get('auto_sync_onlyoffice', False) else '' }}>
+                            <label class="form-check-label" for="auto-sync">
+                                Auto-sync documents to OnlyOffice after OCR
+                            </label>
+                        </div>
+                    </div>
+                    <div class="d-flex gap-2">
+                        <button type="button" class="btn btn-outline-info" onclick="testOnlyOfficeConnection()">
+                            <i class="fas fa-file-office"></i> Test Connection
+                        </button>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save"></i> Save OnlyOffice Settings
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- AI/LLM Settings -->
+    <div class="tab-pane fade" id="ai" role="tabpanel">
+        <div class="card mt-3">
+            <div class="card-header">
+                <h5><i class="fas fa-robot"></i> AI/LLM Configuration</h5>
+            </div>
+            <div class="card-body">
+                <form id="ai-form">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6>LLM Provider</h6>
+                            <div class="mb-3">
+                                <label for="llm-provider" class="form-label">Provider</label>
+                                <select class="form-select" id="llm-provider" name="llm_provider">
+                                    <option value="ollama" {{ 'selected' if settings.get('llm_provider') == 'ollama' else '' }}>Ollama (Local)</option>
+                                    <option value="openai" {{ 'selected' if settings.get('llm_provider') == 'openai' else '' }}>OpenAI</option>
+                                    <option value="anthropic" {{ 'selected' if settings.get('llm_provider') == 'anthropic' else '' }}>Anthropic</option>
+                                    <option value="lm_studio" {{ 'selected' if settings.get('llm_provider') == 'lm_studio' else '' }}>LM Studio</option>
+                                </select>
+                            </div>
+                            <div class="mb-3">
+                                <label for="llm-model" class="form-label">Model Name</label>
+                                <div class="input-group">
+                                    <select class="form-select" id="llm-model-select" name="llm_model_select">
+                                        <option value="">Loading models...</option>
+                                    </select>
+                                    <input type="text" class="form-control" id="llm-model" name="llm_model" 
+                                           value="{{ settings.get('llm_model', 'llama3.2:3b') }}" 
+                                           placeholder="e.g., llama3.2:3b, gpt-4, claude-3">
+                                    <button class="btn btn-outline-secondary" type="button" id="refresh-models-btn" title="Refresh Models">
+                                        <i class="fas fa-sync-alt"></i>
+                                    </button>
+                                </div>
+                                <small class="form-text text-muted">Select from dropdown or type custom model name</small>
+                            </div>
+                            <div class="mb-3">
+                                <label for="llm-base-url" class="form-label">Base URL</label>
+                                <input type="url" class="form-control" id="llm-base-url" name="llm_base_url" 
+                                       value="{{ settings.get('llm_base_url', 'http://localhost:11434') }}">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <h6>API Configuration</h6>
+                            <div class="mb-3">
+                                <label for="llm-api-key" class="form-label">API Key</label>
+                                <input type="password" class="form-control" id="llm-api-key" name="llm_api_key" 
+                                       placeholder="Enter API key if required">
+                            </div>
+                            <div class="mb-3">
+                                <label for="llm-temperature" class="form-label">Temperature</label>
+                                <input type="number" class="form-control" id="llm-temperature" name="llm_temperature" 
+                                       value="{{ settings.get('llm_temperature', '0.7') }}" 
+                                       min="0" max="2" step="0.1">
+                            </div>
+                            <div class="mb-3">
+                                <label for="llm-max-tokens" class="form-label">Max Tokens</label>
+                                <input type="number" class="form-control" id="llm-max-tokens" name="llm_max_tokens" 
+                                       value="{{ settings.get('llm_max_tokens', '2048') }}">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="d-flex gap-2">
+                        <button type="button" class="btn btn-outline-info" onclick="testLLMConnection()">
+                            <i class="fas fa-robot"></i> Test LLM
+                        </button>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save"></i> Save AI Settings
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- System Settings -->
+    <div class="tab-pane fade" id="system" role="tabpanel">
+        <div class="card mt-3">
+            <div class="card-header">
+                <h5><i class="fas fa-server"></i> System Configuration</h5>
+            </div>
+            <div class="card-body">
+                <form id="system-form">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6>Application Settings</h6>
+                            <div class="mb-3">
+                                <label for="app-name" class="form-label">Application Name</label>
+                                <input type="text" class="form-control" id="app-name" name="app_name" 
+                                       value="{{ settings.get('app_name', 'OCR Agent') }}">
+                            </div>
+                            <div class="mb-3">
+                                <label for="upload-folder" class="form-label">Upload Folder</label>
+                                <input type="text" class="form-control" id="upload-folder" name="upload_folder" 
+                                       value="{{ settings.get('upload_folder', 'uploads') }}">
+                            </div>
+                            <div class="mb-3">
+                                <label for="max-file-size" class="form-label">Max File Size (MB)</label>
+                                <input type="number" class="form-control" id="max-file-size" name="max_file_size" 
+                                       value="{{ settings.get('max_file_size', '16') }}">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <h6>Security Settings</h6>
+                            <div class="mb-3">
+                                <label for="secret-key" class="form-label">Secret Key</label>
+                                <input type="password" class="form-control" id="secret-key" name="secret_key" 
+                                       placeholder="Enter new secret key to change">
+                            </div>
+                            <div class="mb-3">
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" id="debug-mode" name="debug_mode" 
+                                           {{ 'checked' if settings.get('debug_mode', False) else '' }}>
+                                    <label class="form-check-label" for="debug-mode">
+                                        Debug Mode
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="mb-3">
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" id="auto-backup" name="auto_backup" 
+                                           {{ 'checked' if settings.get('auto_backup', True) else '' }}>
+                                    <label class="form-check-label" for="auto-backup">
+                                        Auto Backup Database
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="d-flex gap-2">
+                        <button type="button" class="btn btn-outline-warning" onclick="exportSettings()">
+                            <i class="fas fa-download"></i> Export Settings
+                        </button>
+                        <button type="button" class="btn btn-outline-warning" onclick="importSettings()">
+                            <i class="fas fa-upload"></i> Import Settings
+                        </button>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save"></i> Save System Settings
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Hidden file input for settings import -->
+<input type="file" id="settings-file-input" accept=".json" style="display: none;">
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Form submission handlers
+document.getElementById('database-form').addEventListener('submit', function(e) {
+    e.preventDefault();
+    saveSettings('database', this);
+});
+
+document.getElementById('ocr-form').addEventListener('submit', function(e) {
+    e.preventDefault();
+    saveSettings('ocr', this);
+});
+
+document.getElementById('onlyoffice-form').addEventListener('submit', function(e) {
+    e.preventDefault();
+    saveOnlyOfficeSettings(this);
+});
+
+document.getElementById('ai-form').addEventListener('submit', function(e) {
+    e.preventDefault();
+    saveAISettings(this);
+});
+
+document.getElementById('system-form').addEventListener('submit', function(e) {
+    e.preventDefault();
+    saveSettings('system', this);
+});
+
+// Save AI settings function
+function saveAISettings(form) {
+    const formData = new FormData(form);
+    const settings = {};
+    
+    for (let [key, value] of formData.entries()) {
+        if (form.querySelector(`[name="${key}"]`).type === 'checkbox') {
+            settings[key] = form.querySelector(`[name="${key}"]`).checked;
+        } else {
+            settings[key] = value;
+        }
+    }
+    
+    // Show loading state
+    const submitBtn = form.querySelector('button[type="submit"]');
+    const originalText = submitBtn.innerHTML;
+    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
+    submitBtn.disabled = true;
+    
+    fetch('/api/settings/ai', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(settings)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showNotification('AI settings saved successfully! Connection: ' + data.connection_status, 'success');
+        } else {
+            showNotification('Error saving AI settings: ' + data.error, 'danger');
+        }
+    })
+    .catch(error => {
+        showNotification('Error saving AI settings: ' + error.message, 'danger');
+    })
+    .finally(() => {
+        // Restore button state
+        submitBtn.innerHTML = originalText;
+        submitBtn.disabled = false;
+    });
+}
+
+// Load Ollama models
+function loadOllamaModels() {
+    const modelSelect = document.getElementById('llm-model-select');
+    const refreshBtn = document.getElementById('refresh-models-btn');
+    
+    // Show loading state
+    modelSelect.innerHTML = '<option value="">Loading models...</option>';
+    refreshBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+    
+    fetch('/api/ollama/models')
+    .then(response => response.json())
+    .then(data => {
+        modelSelect.innerHTML = '<option value="">Select a model...</option>';
+        
+        if (data.success && data.models.length > 0) {
+            data.models.forEach(model => {
+                const option = document.createElement('option');
+                option.value = model.name;
+                option.textContent = `${model.name} (${formatBytes(model.size)})`;
+                modelSelect.appendChild(option);
+            });
+            
+            // Set current model if it exists
+            const currentModel = document.getElementById('llm-model').value;
+            if (currentModel) {
+                modelSelect.value = currentModel;
+            }
+            
+            showNotification(`Loaded ${data.models.length} Ollama models`, 'success');
+        } else {
+            modelSelect.innerHTML = '<option value="">No models available</option>';
+            showNotification(data.error || 'No Ollama models found', 'warning');
+        }
+    })
+    .catch(error => {
+        modelSelect.innerHTML = '<option value="">Error loading models</option>';
+        showNotification('Error loading Ollama models: ' + error.message, 'danger');
+    })
+    .finally(() => {
+        refreshBtn.innerHTML = '<i class="fas fa-sync-alt"></i>';
+    });
+}
+
+// Helper function to format bytes
+function formatBytes(bytes) {
+    if (bytes === 0) return '0 B';
+    const k = 1024;
+    const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+}
+
+// Handle model selection
+document.addEventListener('DOMContentLoaded', function() {
+    const modelSelect = document.getElementById('llm-model-select');
+    const modelInput = document.getElementById('llm-model');
+    const refreshBtn = document.getElementById('refresh-models-btn');
+    const providerSelect = document.getElementById('llm-provider');
+    
+    // Load models when page loads
+    if (providerSelect.value === 'ollama') {
+        loadOllamaModels();
+    }
+    
+    // Update input when selection changes
+    modelSelect.addEventListener('change', function() {
+        if (this.value) {
+            modelInput.value = this.value;
+        }
+    });
+    
+    // Refresh models button
+    refreshBtn.addEventListener('click', function() {
+        if (providerSelect.value === 'ollama') {
+            loadOllamaModels();
+        }
+    });
+    
+    // Show/hide model selector based on provider
+    providerSelect.addEventListener('change', function() {
+        const isOllama = this.value === 'ollama';
+        modelSelect.style.display = isOllama ? 'block' : 'none';
+        refreshBtn.style.display = isOllama ? 'block' : 'none';
+        
+        if (isOllama) {
+            loadOllamaModels();
+        }
+    });
+    
+    // Initial provider check
+    const isOllama = providerSelect.value === 'ollama';
+    modelSelect.style.display = isOllama ? 'block' : 'none';
+    refreshBtn.style.display = isOllama ? 'block' : 'none';
+});
+
+// Save OnlyOffice settings function
+function saveOnlyOfficeSettings(form) {
+    const formData = new FormData(form);
+    const settings = {};
+    
+    for (let [key, value] of formData.entries()) {
+        if (form.querySelector(`[name="${key}"]`).type === 'checkbox') {
+            settings[key] = form.querySelector(`[name="${key}"]`).checked;
+        } else {
+            settings[key] = value;
+        }
+    }
+    
+    // Show loading state
+    const submitBtn = form.querySelector('button[type="submit"]');
+    const originalText = submitBtn.innerHTML;
+    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
+    submitBtn.disabled = true;
+    
+    fetch('/api/settings/onlyoffice', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(settings)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showNotification('OnlyOffice settings saved successfully! Connection: ' + data.connection_status, 'success');
+        } else {
+            showNotification('Error saving OnlyOffice settings: ' + data.error, 'danger');
+        }
+    })
+    .catch(error => {
+        showNotification('Error saving OnlyOffice settings: ' + error.message, 'danger');
+    })
+    .finally(() => {
+        // Restore button state
+        submitBtn.innerHTML = originalText;
+        submitBtn.disabled = false;
+    });
+}
+
+// Save settings function
+function saveSettings(category, form) {
+    const formData = new FormData(form);
+    const settings = {};
+    
+    for (let [key, value] of formData.entries()) {
+        if (form.querySelector(`[name="${key}"]`).type === 'checkbox') {
+            settings[key] = form.querySelector(`[name="${key}"]`).checked;
+        } else {
+            settings[key] = value;
+        }
+    }
+    
+    fetch('/api/settings', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({category: category, settings: settings})
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showNotification('Settings saved successfully!', 'success');
+        } else {
+            showNotification('Error saving settings: ' + data.error, 'danger');
+        }
+    })
+    .catch(error => {
+        showNotification('Error: ' + error.message, 'danger');
+    });
+}
+
+// Test connection functions
+function testDatabaseConnection() {
+    const statusElement = document.getElementById('db-connection-status');
+    statusElement.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Testing...';
+    statusElement.className = 'badge bg-warning';
+    
+    const form = document.getElementById('database-form');
+    const formData = new FormData(form);
+    const dbConfig = {};
+    for (let [key, value] of formData.entries()) {
+        dbConfig[key] = value;
+    }
+    
+    fetch('/api/test-database', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(dbConfig)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            statusElement.textContent = 'Connected';
+            statusElement.className = 'badge bg-success';
+        } else {
+            statusElement.textContent = 'Failed: ' + data.error;
+            statusElement.className = 'badge bg-danger';
+        }
+    })
+    .catch(error => {
+        statusElement.textContent = 'Error: ' + error.message;
+        statusElement.className = 'badge bg-danger';
+    });
+}
+
+function testOCRConnection() {
+    fetch('/api/test-ocr', {
+        method: 'POST'
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showNotification('OCR services are working correctly!', 'success');
+        } else {
+            showNotification('OCR test failed: ' + data.error, 'danger');
+        }
+    })
+    .catch(error => {
+        showNotification('Error testing OCR: ' + error.message, 'danger');
+    });
+}
+
+function testOnlyOfficeConnection() {
+    // Get current form values
+    const form = document.getElementById('onlyoffice-form');
+    const formData = new FormData(form);
+    const settings = {};
+    
+    for (let [key, value] of formData.entries()) {
+        settings[key] = value;
+    }
+    
+    // Show loading state on test button
+    const testBtn = document.querySelector('button[onclick="testOnlyOfficeConnection()"]');
+    const originalText = testBtn.innerHTML;
+    testBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Testing...';
+    testBtn.disabled = true;
+    
+    fetch('/api/settings/test-onlyoffice', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(settings)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.connected) {
+            showNotification('OnlyOffice connection successful! Service URL: ' + data.service_url, 'success');
+        } else {
+            showNotification('OnlyOffice connection failed: ' + (data.error || 'Service unavailable'), 'danger');
+        }
+    })
+    .catch(error => {
+        showNotification('Error testing OnlyOffice: ' + error.message, 'danger');
+    })
+    .finally(() => {
+        // Restore button state
+        testBtn.innerHTML = originalText;
+        testBtn.disabled = false;
+    });
+}
+
+function testLLMConnection() {
+    fetch('/api/test-llm', {
+        method: 'POST'
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showNotification('LLM connection successful! Response: ' + data.response, 'success');
+        } else {
+            showNotification('LLM test failed: ' + data.error, 'danger');
+        }
+    })
+    .catch(error => {
+        showNotification('Error testing LLM: ' + error.message, 'danger');
+    });
+}
+
+// DeepSeek OCR Management Functions
+function startDeepSeekOCR() {
+    showNotification('Starting DeepSeek OCR server...', 'info');
+    
+    fetch('/api/deepseek/start', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showNotification('DeepSeek OCR server started successfully!', 'success');
+            updateDeepSeekStatus('running', 'Server is running');
+        } else {
+            showNotification('Failed to start DeepSeek OCR server: ' + data.message, 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Error starting DeepSeek OCR:', error);
+        showNotification('Error starting DeepSeek OCR server', 'error');
+    });
+}
+
+function stopDeepSeekOCR() {
+    showNotification('Stopping DeepSeek OCR server...', 'info');
+    
+    fetch('/api/deepseek/stop', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showNotification('DeepSeek OCR server stopped successfully!', 'success');
+            updateDeepSeekStatus('stopped', 'Server is stopped');
+        } else {
+            showNotification('Failed to stop DeepSeek OCR server: ' + data.message, 'warning');
+        }
+    })
+    .catch(error => {
+        console.error('Error stopping DeepSeek OCR:', error);
+        showNotification('Error stopping DeepSeek OCR server', 'error');
+    });
+}
+
+function checkDeepSeekStatus() {
+    fetch('/api/deepseek/status')
+    .then(response => response.json())
+    .then(data => {
+        const isRunning = data.is_running || false;
+        const message = data.message || 'Status unknown';
+        
+        updateDeepSeekStatus(isRunning ? 'running' : 'stopped', message);
+        
+        if (data.server_info) {
+            console.log('DeepSeek OCR Server Info:', data.server_info);
+        }
+    })
+    .catch(error => {
+        console.error('Error checking DeepSeek OCR status:', error);
+        updateDeepSeekStatus('error', 'Failed to check status');
+    });
+}
+
+function updateDeepSeekStatus(status, message) {
+    const statusDiv = document.getElementById('deepseek-status');
+    
+    // Remove all status classes
+    statusDiv.classList.remove('alert-success', 'alert-danger', 'alert-warning', 'alert-secondary');
+    
+    // Add appropriate class and icon
+    switch(status) {
+        case 'running':
+            statusDiv.classList.add('alert-success');
+            statusDiv.innerHTML = '<i class="fas fa-check-circle"></i> Status: ' + message;
+            break;
+        case 'stopped':
+            statusDiv.classList.add('alert-warning');
+            statusDiv.innerHTML = '<i class="fas fa-pause-circle"></i> Status: ' + message;
+            break;
+        case 'error':
+            statusDiv.classList.add('alert-danger');
+            statusDiv.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Status: ' + message;
+            break;
+        default:
+            statusDiv.classList.add('alert-secondary');
+            statusDiv.innerHTML = '<i class="fas fa-question-circle"></i> Status: ' + message;
+    }
+}
+
+function testTesseractOCR() {
+    showNotification('Testing Tesseract OCR...', 'info');
+    
+    fetch('/api/ocr/test-tesseract', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showNotification('Tesseract OCR test successful!', 'success');
+        } else {
+            showNotification('Tesseract OCR test failed: ' + data.message, 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Error testing Tesseract OCR:', error);
+        showNotification('Error testing Tesseract OCR', 'error');
+    });
+}
+
+function listTesseractLanguages() {
+    fetch('/api/ocr/tesseract-languages')
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            const languages = data.languages.join(', ');
+            showNotification('Available languages: ' + languages, 'info');
+        } else {
+            showNotification('Failed to get Tesseract languages: ' + data.message, 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Error getting Tesseract languages:', error);
+        showNotification('Error getting Tesseract languages', 'error');
+    });
+}
+
+function testOCRPipeline() {
+    showNotification('Testing full OCR pipeline...', 'info');
+    
+    fetch('/api/ocr/test-pipeline', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            let message = 'OCR Pipeline Test Results:\n';
+            if (data.deepseek_local) message += '✓ DeepSeek Local: Working\n';
+            if (data.deepseek_api) message += '✓ DeepSeek API: Working\n';
+            if (data.tesseract) message += '✓ Tesseract: Working\n';
+            
+            showNotification(message, 'success');
+        } else {
+            showNotification('OCR Pipeline test failed: ' + data.message, 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Error testing OCR pipeline:', error);
+        showNotification('Error testing OCR pipeline', 'error');
+    });
+}
+
+// Auto-check DeepSeek status on page load
+document.addEventListener('DOMContentLoaded', function() {
+    // Check DeepSeek status after a short delay
+    setTimeout(checkDeepSeekStatus, 1000);
+});
+
+// Settings import/export
+function exportSettings() {
+    fetch('/api/settings/export')
+    .then(response => response.blob())
+    .then(blob => {
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.style.display = 'none';
+        a.href = url;
+        a.download = 'ocr_agent_settings.json';
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        showNotification('Settings exported successfully!', 'success');
+    })
+    .catch(error => {
+        showNotification('Error exporting settings: ' + error.message, 'danger');
+    });
+}
+
+function importSettings() {
+    document.getElementById('settings-file-input').click();
+}
+
+document.getElementById('settings-file-input').addEventListener('change', function(e) {
+    const file = e.target.files[0];
+    if (file) {
+        const formData = new FormData();
+        formData.append('settings_file', file);
+        
+        fetch('/api/settings/import', {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showNotification('Settings imported successfully! Reloading page...', 'success');
+                setTimeout(() => {
+                    window.location.reload();
+                }, 2000);
+            } else {
+                showNotification('Error importing settings: ' + data.error, 'danger');
+            }
+        })
+        .catch(error => {
+            showNotification('Error importing settings: ' + error.message, 'danger');
+        });
+    }
+});
+
+// Notification function
+function showNotification(message, type) {
+    const alertDiv = document.createElement('div');
+    alertDiv.className = `alert alert-${type} alert-dismissible fade show position-fixed`;
+    alertDiv.style.cssText = 'top: 20px; right: 20px; z-index: 1050; max-width: 400px;';
+    alertDiv.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    document.body.appendChild(alertDiv);
+    
+    setTimeout(() => {
+        alertDiv.remove();
+    }, 5000);
+}
+
+// Initialize on page load
+document.addEventListener('DOMContentLoaded', function() {
+    testDatabaseConnection();
+    
+    // Handle URL hash navigation for direct tab access
+    function activateTabFromHash() {
+        const hash = window.location.hash.substring(1); // Remove the #
+        if (hash) {
+            const tabButton = document.querySelector(`#${hash}-tab`);
+            const tabPane = document.querySelector(`#${hash}`);
+            
+            if (tabButton && tabPane) {
+                // Remove active class from all tabs and panes
+                document.querySelectorAll('.nav-link').forEach(link => link.classList.remove('active'));
+                document.querySelectorAll('.tab-pane').forEach(pane => {
+                    pane.classList.remove('show', 'active');
+                });
+                
+                // Activate the target tab
+                tabButton.classList.add('active');
+                tabPane.classList.add('show', 'active');
+                
+                // Scroll to top of the page
+                window.scrollTo(0, 0);
+                
+                // Show a notification about which section was opened
+                const tabName = tabButton.textContent.trim();
+                showNotification(`Opened ${tabName} settings`, 'info');
+            }
+        }
+    }
+    
+    // Activate tab from hash on page load
+    activateTabFromHash();
+    
+    // Listen for hash changes (if user uses back/forward buttons)
+    window.addEventListener('hashchange', activateTabFromHash);
+});
+</script>
+{% endblock %}

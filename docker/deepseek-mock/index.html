@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>DeepSeek OCR Mock Service</title>
+</head>
+<body>
+    <h1>DeepSeek OCR Mock Service</h1>
+    <p>Status: Running</p>
+    <p>This is a mock service for testing. Replace with actual DeepSeek OCR implementation.</p>
+    
+    <script>
+    // Simple mock API responses
+    if (window.location.pathname === '/health') {
+        document.body.innerHTML = '{"status": "ok", "service": "deepseek-ocr-mock"}';
+        document.querySelector('html').style.fontFamily = 'monospace';
+    }
+    </script>
+</body>
+</html>

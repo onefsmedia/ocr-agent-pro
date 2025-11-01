@@ -1,0 +1,626 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - OCR Agent Pro{% endblock %}
+
+{% block content %}
+<!-- Hero Section -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body text-center">
+                <div class="mb-3">
+                    <i class="fas fa-brain fa-3x text-primary"></i>
+                </div>
+                <h1 class="fw-bold text-primary mb-2">OCR Agent Pro</h1>
+                <p class="text-muted mb-3">Intelligent Document Processing & AI-Powered Analysis</p>
+                <div class="d-flex justify-content-center gap-2 flex-wrap">
+                    <span class="badge bg-primary">
+                        <i class="fas fa-robot me-1"></i>AI Powered
+                    </span>
+                    <span class="badge bg-primary">
+                        <i class="fas fa-shield-alt me-1"></i>Secure
+                    </span>
+                    <span class="badge bg-primary">
+                        <i class="fas fa-lightning-bolt me-1"></i>Fast Processing
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- System Status Bar -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h6 class="mb-0">System Status</h6>
+            </div>
+            <div class="card-body">
+                <div class="row text-center">
+                    <div class="col-md-3">
+                        <i class="fas fa-database fa-lg text-primary"></i>
+                        <div>
+                            <small class="d-block text-dark">Database</small>
+                            <strong class="text-dark">
+                                {{ 'PostgreSQL' if database_status == 'connected' else 'SQLite' }}
+                            </strong>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <i class="fas fa-file-alt fa-lg text-primary"></i>
+                        <div>
+                            <small class="d-block text-dark">Documents</small>
+                            <strong class="text-dark">{{ doc_count }}</strong>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <i class="fas fa-puzzle-piece fa-lg text-primary"></i>
+                        <div>
+                            <small class="d-block text-dark">Text Chunks</small>
+                            <strong class="text-dark">{{ chunk_count }}</strong>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <i class="fas fa-comments fa-lg text-primary"></i>
+                        <div>
+                            <small class="d-block text-dark">Chat Sessions</small>
+                            <strong class="text-dark">{{ session_count }}</strong>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- System Alert -->
+{% if database_status == 'disconnected' %}
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="alert alert-warning alert-dismissible fade show" role="alert">
+            <i class="fas fa-exclamation-triangle me-2"></i>
+            <strong>Database Notice:</strong> Using SQLite fallback. PostgreSQL is not available.
+            <a href="{{ url_for('main.database_panel') }}" class="alert-link">View database status</a>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Main Dashboard Panels -->
+<div class="row">
+    <!-- Panel 1: Document Management - Full Width -->
+    <div class="col-12 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-cloud-upload-alt me-2"></i>Document Management
+                </h5>
+                <small>Upload, Process & Browse Documents</small>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <!-- Upload Area -->
+                    <div class="col-lg-6">
+                        <div class="mb-4">
+                            {% include 'panels/ingestion.html' %}
+                        </div>
+                    </div>
+                    
+                    <!-- Recent Documents -->
+                    <div class="col-lg-6">
+                        <div class="d-flex align-items-center justify-content-between mb-3">
+                            <h6 class="mb-0 text-dark">
+                                <i class="fas fa-clock me-1"></i>Recent Documents
+                            </h6>
+                            <a href="{{ url_for('main.table_panel') }}" class="btn btn-outline-primary btn-sm">
+                                <i class="fas fa-list me-1"></i>View All
+                            </a>
+                        </div>
+                        
+                        {% if recent_documents %}
+                        <div class="list-group list-group-flush">
+                            {% for doc in recent_documents[:3] %}
+                            <div class="list-group-item border-0 px-0 py-2 bg-transparent">
+                                <div class="d-flex align-items-center">
+                                    <div class="me-3">
+                                        <i class="fas fa-file-pdf text-primary fa-lg"></i>
+                                    </div>
+                                    <div class="flex-grow-1">
+                                        <h6 class="mb-1 text-dark">{{ doc.filename[:35] }}{% if doc.filename|length > 35 %}...{% endif %}</h6>
+                                        <small class="text-dark">{{ doc.created_at.strftime('%Y-%m-%d %H:%M') }}</small>
+                                    </div>
+                                    <div>
+                                        <span class="badge bg-primary">
+                                            {{ doc.processing_status }}
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        {% else %}
+                        <div class="text-center py-4">
+                            <i class="fas fa-cloud-upload-alt fa-3x text-primary mb-3"></i>
+                            <h6 class="text-dark mb-2">Ready to Get Started!</h6>
+                            <p class="text-dark mb-3">Upload your first document to begin OCR processing</p>
+                            <small class="text-dark">Supported formats: PDF, PNG, JPG, JPEG, TIFF, BMP</small>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Panel 2: AI Assistant & Prompts - Full Width -->
+    <div class="col-12 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-comments me-2"></i>AI Assistant
+                </h5>
+                <small>RAG-Powered Chat & Prompts</small>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <!-- Quick Chat Interface -->
+                    <div class="col-lg-6">
+                        <h6 class="mb-3 text-dark">
+                            <i class="fas fa-comments text-primary me-1"></i>Quick Chat
+                        </h6>
+                        
+                        <div class="mb-3">
+                            <div class="input-group">
+                                <input type="text" class="form-control" placeholder="Ask about your documents..." id="quick-chat-input">
+                                <button class="btn btn-primary" onclick="quickChat()">
+                                    <i class="fas fa-paper-plane"></i>
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <!-- Chat Response Area -->
+                        <div id="quick-chat-response" class="border rounded p-3 mb-3 bg-light" style="min-height: 120px;">
+                            <div class="text-center text-muted py-3">
+                                <i class="fas fa-robot fa-2x mb-2 opacity-50"></i>
+                                <p class="mb-0 small">Ask a question about your documents to get started</p>
+                                <small class="text-muted">Your AI assistant will provide context-aware responses</small>
+                            </div>
+                        </div>
+                        
+                        <!-- Chat History Button -->
+                        <div class="d-grid">
+                            <a href="{{ url_for('main.chatbot_panel') }}" class="btn btn-outline-primary btn-sm">
+                                <i class="fas fa-history me-1"></i>View Chat History
+                            </a>
+                        </div>
+                    </div>
+                    
+                    <!-- Prompt Management & Actions -->
+                    <div class="col-lg-6">
+                        <!-- Prompt Management -->
+                        <div class="border border-dark rounded p-3 mb-3">
+                            <h6 class="mb-2 text-dark">
+                                <i class="fas fa-magic text-primary me-1"></i>Active System Prompt
+                            </h6>
+                            <div class="rounded p-2 border border-dark">
+                                <small class="text-dark">{{ (settings.get('system_prompt', 'Default AI assistant prompt'))[:80] }}{% if (settings.get('system_prompt', '')|length) > 80 %}...{% endif %}</small>
+                            </div>
+                        </div>
+                        
+                        <div class="d-grid gap-2">
+                            <a href="{{ url_for('main.chatbot_panel') }}" class="btn btn-primary">
+                                <i class="fas fa-comment-dots me-2"></i>Full Chat Interface
+                            </a>
+                            <a href="{{ url_for('main.prompt_panel') }}" class="btn btn-outline-primary btn-sm">
+                                <i class="fas fa-edit me-2"></i>Edit Prompts
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Panel 3: AI Lesson Generator - Full Width -->
+    <div class="col-12 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-chalkboard-teacher me-2"></i>AI Lesson Generator
+                    <span class="badge bg-primary ms-2">OnlyOffice Integration</span>
+                </h5>
+                <small>Generate AI-Powered Educational Content ⭐ Professional Feature</small>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-lg-8">
+                        <div class="mb-3">
+                            <p class="text-dark mb-3">
+                                <i class="fas fa-lightbulb text-primary me-2"></i>
+                                Create comprehensive lesson notes from curriculum documents using advanced AI. Export directly to OnlyOffice for collaborative editing.
+                            </p>
+                            
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <label class="form-label fw-bold text-dark">Subject</label>
+                                    <select class="form-select" id="dashboard-subject">
+                                        <option value="">Select Subject</option>
+                                        <!-- Will be populated by JavaScript from Cameroonian education system -->
+                                    </select>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label fw-bold text-dark">Class Level</label>
+                                    <select class="form-select" id="dashboard-class">
+                                        <option value="">Select Class</option>
+                                        <!-- Will be populated by JavaScript from Cameroonian education system -->
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-lg-4">
+                        <div class="text-center">
+                            <div class="mb-3">
+                                <span class="badge bg-primary" id="onlyoffice-badge">
+                                    <i class="fas fa-clock"></i> Checking OnlyOffice...
+                                </span>
+                            </div>
+                            
+                            <div class="d-grid gap-2">
+                                <a href="{{ url_for('main.lesson_generator_panel') }}" class="btn btn-primary btn-lg">
+                                    <i class="fas fa-plus me-2"></i>Create New Lesson
+                                </a>
+                                <small class="text-dark">Generate lessons from uploaded curriculum documents</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Panel 4: System Configuration - Full Width -->
+    <div class="col-12 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-sliders-h me-2"></i>System Configuration
+                </h5>
+                <small>AI, OCR & Prompt Settings</small>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-lg-4">
+                        <a href="{{ url_for('main.settings_panel') }}#ai" class="text-decoration-none config-card" data-tab="ai">
+                            <div class="d-flex align-items-center justify-content-between p-3 border border-dark rounded config-card-hover">
+                                <div>
+                                    <h6 class="mb-1 text-dark">
+                                        <i class="fas fa-robot text-primary me-2"></i>AI Configuration
+                                    </h6>
+                                    <small class="text-dark">Ollama Models & Settings</small>
+                                </div>
+                                <i class="fas fa-chevron-right text-primary"></i>
+                            </div>
+                        </a>
+                    </div>
+                    
+                    <div class="col-lg-4">
+                        <a href="{{ url_for('main.settings_panel') }}#ocr" class="text-decoration-none config-card" data-tab="ocr">
+                            <div class="d-flex align-items-center justify-content-between p-3 border border-dark rounded config-card-hover">
+                                <div>
+                                    <h6 class="mb-1 text-dark">
+                                        <i class="fas fa-eye text-primary me-2"></i>OCR Settings
+                                    </h6>
+                                    <small class="text-dark">Tesseract & DeepSeek OCR</small>
+                                </div>
+                                <i class="fas fa-chevron-right text-primary"></i>
+                            </div>
+                        </a>
+                    </div>
+                    
+                    <div class="col-lg-4">
+                        <a href="{{ url_for('main.prompt_panel') }}" class="text-decoration-none config-card">
+                            <div class="d-flex align-items-center justify-content-between p-3 border border-dark rounded config-card-hover">
+                                <div>
+                                    <h6 class="mb-1 text-dark">
+                                        <i class="fas fa-magic text-primary me-2"></i>AI Prompts
+                                    </h6>
+                                    <small class="text-dark">System & Chat Prompts</small>
+                                </div>
+                                <i class="fas fa-chevron-right text-primary"></i>
+                            </div>
+                        </a>
+                    </div>
+                </div>
+                
+                <div class="mt-3 text-center">
+                    <a href="{{ url_for('main.settings_panel') }}" class="btn btn-outline-primary">
+                        <i class="fas fa-cog me-2"></i>Open Settings
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Panel 5: Database & System Status - Full Width -->
+    <div class="col-12 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-server me-2"></i>System Status
+                </h5>
+                <small>Database & Services Monitor</small>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-lg-6">
+                        <div class="text-center mb-4">
+                            {% if database_status == 'connected' %}
+                            <i class="fas fa-check-circle fa-3x text-primary"></i>
+                            <h6 class="mt-2 text-dark">All Systems Online</h6>
+                            <small class="text-dark">PostgreSQL + pgvector ready</small>
+                            {% else %}
+                            <i class="fas fa-exclamation-triangle fa-3x text-primary"></i>
+                            <h6 class="mt-2 text-dark">Fallback Mode</h6>
+                            <small class="text-dark">SQLite with limited features</small>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <div class="col-lg-6">
+                        <div class="row text-center mb-3">
+                            <div class="col-6">
+                                <div class="border border-dark rounded p-3">
+                                    <i class="fas fa-database fa-lg text-primary"></i>
+                                    <div class="mt-2">
+                                        <small class="text-dark d-block">Database</small>
+                                        <strong class="text-dark">{{ 'PostgreSQL' if database_status == 'connected' else 'SQLite' }}</strong>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="border border-dark rounded p-3">
+                                    <i class="fas fa-vector-square fa-lg text-primary"></i>
+                                    <div class="mt-2">
+                                        <small class="text-dark d-block">Vector Search</small>
+                                        <strong class="text-dark">{{ 'Enabled' if database_status == 'connected' else 'Disabled' }}</strong>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="text-center">
+                            <a href="{{ url_for('main.database_panel') }}" class="btn btn-outline-primary">
+                                <i class="fas fa-chart-line me-2"></i>View Details
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock content %}
+
+{% block scripts %}
+<script>
+// Initialize dashboard
+document.addEventListener('DOMContentLoaded', function() {
+    checkOnlyOfficeStatus();
+    loadDashboardData();
+});
+
+function checkOnlyOfficeStatus() {
+    fetch('/api/onlyoffice/status')
+        .then(response => response.json())
+        .then(data => {
+            const badgeElement = document.getElementById('onlyoffice-badge');
+            
+            if (data.success && data.status === 'online') {
+                if (badgeElement) {
+                    badgeElement.innerHTML = '<i class="fas fa-check-circle"></i> OnlyOffice Online';
+                    badgeElement.className = 'badge bg-primary text-white';
+                }
+            } else {
+                if (badgeElement) {
+                    badgeElement.innerHTML = '<i class="fas fa-times-circle"></i> OnlyOffice Offline';
+                    badgeElement.className = 'badge bg-light text-dark border border-dark';
+                }
+            }
+        })
+        .catch(() => {
+            const badgeElement = document.getElementById('onlyoffice-badge');
+            if (badgeElement) {
+                badgeElement.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Connection Error';
+                badgeElement.className = 'badge bg-light text-dark border border-dark';
+            }
+        });
+}
+
+function quickChat() {
+    const input = document.getElementById('quick-chat-input');
+    const responseDiv = document.getElementById('quick-chat-response');
+    
+    if (!input.value.trim()) {
+        input.focus();
+        return;
+    }
+    
+    // Show user message first
+    responseDiv.innerHTML = `
+        <div class="mb-3">
+            <div class="d-flex align-items-start gap-2">
+                <div class="flex-shrink-0">
+                    <i class="fas fa-user fa-lg text-primary"></i>
+                </div>
+                <div class="flex-grow-1">
+                    <div class="bg-primary text-white rounded p-2">
+                        ${input.value}
+                    </div>
+                    <small class="text-muted">${new Date().toLocaleTimeString()}</small>
+                </div>
+            </div>
+        </div>
+        <div class="text-center text-muted">
+            <i class="fas fa-spinner fa-spin"></i> AI is thinking...
+        </div>
+    `;
+    
+    const userMessage = input.value;
+    input.value = '';
+    
+    fetch('/api/chat', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            message: userMessage
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.response) {
+            responseDiv.innerHTML = `
+                <div class="mb-3">
+                    <div class="d-flex align-items-start gap-2">
+                        <div class="flex-shrink-0">
+                            <i class="fas fa-user fa-lg text-primary"></i>
+                        </div>
+                        <div class="flex-grow-1">
+                            <div class="bg-primary text-white rounded p-2">
+                                ${userMessage}
+                            </div>
+                            <small class="text-muted">${new Date().toLocaleTimeString()}</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="d-flex align-items-start gap-2">
+                    <div class="flex-shrink-0">
+                        <i class="fas fa-robot fa-lg text-success"></i>
+                    </div>
+                    <div class="flex-grow-1">
+                        <div class="bg-light border rounded p-3">
+                            ${data.response}
+                        </div>
+                        <small class="text-muted">
+                            ${new Date().toLocaleTimeString()}
+                            ${data.context_used ? `• ${data.context_used} document(s) referenced` : ''}
+                        </small>
+                    </div>
+                </div>
+            `;
+        } else {
+            throw new Error('No response received from AI');
+        }
+    })
+    .catch(error => {
+        responseDiv.innerHTML = `
+            <div class="mb-3">
+                <div class="d-flex align-items-start gap-2">
+                    <div class="flex-shrink-0">
+                        <i class="fas fa-user fa-lg text-primary"></i>
+                    </div>
+                    <div class="flex-grow-1">
+                        <div class="bg-primary text-white rounded p-2">
+                            ${userMessage}
+                        </div>
+                        <small class="text-muted">${new Date().toLocaleTimeString()}</small>
+                    </div>
+                </div>
+            </div>
+            <div class="d-flex align-items-start gap-2">
+                <div class="flex-shrink-0">
+                    <i class="fas fa-exclamation-triangle fa-lg text-danger"></i>
+                </div>
+                <div class="flex-grow-1">
+                    <div class="bg-danger bg-opacity-10 border border-danger rounded p-3">
+                        <strong>Error:</strong> ${error.message || 'Failed to get response from AI assistant'}
+                        <br><small>Please try again or check your connection.</small>
+                    </div>
+                    <small class="text-muted">${new Date().toLocaleTimeString()}</small>
+                </div>
+            </div>
+        `;
+    });
+}
+
+function loadDashboardData() {
+    console.log('Dashboard loaded successfully');
+}
+
+// Enhanced hover effects and quick chat on Enter key
+document.addEventListener('DOMContentLoaded', function() {
+    const cards = document.querySelectorAll('.card');
+    cards.forEach(card => {
+        card.addEventListener('mouseenter', function() {
+            this.style.transform = 'translateY(-2px)';
+            this.style.transition = 'transform 0.2s ease';
+        });
+        
+        card.addEventListener('mouseleave', function() {
+            this.style.transform = 'translateY(0)';
+        });
+    });
+    
+    const chatInput = document.getElementById('quick-chat-input');
+    if (chatInput) {
+        chatInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                quickChat();
+            }
+        });
+    }
+    
+    // Enhanced configuration cards with click feedback
+    const configCards = document.querySelectorAll('.config-card');
+    configCards.forEach(card => {
+        card.addEventListener('click', function(e) {
+            const cardDiv = this.querySelector('.config-card-hover');
+            
+            // Add click animation
+            cardDiv.style.transform = 'scale(0.98)';
+            setTimeout(() => {
+                cardDiv.style.transform = 'translateY(-2px)';
+            }, 100);
+            
+            // Show loading feedback
+            const chevron = this.querySelector('.fa-chevron-right');
+            const originalClass = chevron.className;
+            chevron.className = 'fas fa-spinner fa-spin text-primary';
+            
+            // Get the tab name for notification
+            const tabName = this.querySelector('h6').textContent.trim();
+            
+            // Show notification
+            const alertDiv = document.createElement('div');
+            alertDiv.className = 'alert alert-info alert-dismissible fade show position-fixed';
+            alertDiv.style.cssText = 'top: 20px; right: 20px; z-index: 1050; max-width: 300px;';
+            alertDiv.innerHTML = `
+                <i class="fas fa-arrow-right me-2"></i>Opening ${tabName}...
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            `;
+            document.body.appendChild(alertDiv);
+            
+            // Clean up after a short delay (in case navigation is slow)
+            setTimeout(() => {
+                if (document.body.contains(alertDiv)) {
+                    alertDiv.remove();
+                }
+            }, 3000);
+        });
+    });
+});
+</script>
+{% endblock %}

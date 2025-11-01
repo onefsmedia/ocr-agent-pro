@@ -1,0 +1,307 @@
+{% extends "base.html" %}
+
+{% block title %}AI Assistant - OCR Agent Pro{% endblock %}
+
+{% block content %}
+<!-- Enhanced Chatbot Header -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card glass-effect border-0 mb-4 animate__animated animate__fadeInDown">
+            <div class="card-body text-center py-4">
+                <div class="mb-3">
+                    <i class="fas fa-robot fa-3x gradient-text"></i>
+                </div>
+                <h1 class="gradient-text mb-2">AI Assistant</h1>
+                <p class="text-muted mb-3">RAG-powered document analysis and chat</p>
+                <div class="d-flex justify-content-center gap-2">
+                    <span class="badge bg-primary px-3 py-2">
+                        <i class="fas fa-brain me-1"></i>RAG Enabled
+                    </span>
+                    <span class="badge bg-success px-3 py-2">
+                        <i class="fas fa-search me-1"></i>Vector Search
+                    </span>
+                    <span class="badge bg-info px-3 py-2">
+                        <i class="fas fa-comments me-1"></i>Context Aware
+                    </span>
+                </div>
+                <div class="mt-3">
+                    <a href="{{ url_for('main.dashboard') }}" class="btn btn-outline-primary">
+                        <i class="fas fa-arrow-left me-2"></i>Back to Dashboard
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Main Chat Interface -->
+<div class="container-fluid">
+    <div class="row g-4">
+        <!-- Chat Interface -->
+        <div class="col-xl-8 col-lg-7">
+            <div class="card border-0 shadow-sm h-100 animate__animated animate__fadeInUp">
+                <div class="card-header border-0 text-white" style="background: var(--primary-gradient);">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h5 class="mb-0 fw-bold">
+                                <i class="fas fa-comments me-2"></i>Chat Interface
+                            </h5>
+                            <small class="opacity-75">Ask questions about your documents</small>
+                        </div>
+                        <button class="btn btn-light btn-sm" onclick="clearChat()">
+                            <i class="fas fa-trash me-1"></i>Clear
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body d-flex flex-column p-0" style="height: 500px;">
+                    <!-- Chat Messages -->
+                    <div id="chat-messages" class="flex-grow-1 p-4 chat-container">
+                        <div class="text-center text-muted py-5">
+                            <i class="fas fa-comments fa-3x mb-3 opacity-50"></i>
+                            <p class="mb-0">Start a conversation with your AI assistant</p>
+                            <small>Ask questions about your uploaded documents</small>
+                        </div>
+                    </div>
+                    
+                    <!-- Chat Input -->
+                    <div class="border-top p-4">
+                        <form id="chat-form" class="d-flex gap-2">
+                            <input type="text" id="message-input" class="form-control form-control-lg" 
+                                   placeholder="Ask a question about your documents..." required>
+                            <button type="submit" class="btn btn-primary px-4" id="send-btn">
+                                <i class="fas fa-paper-plane"></i>
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Chat Sessions Sidebar -->
+        <div class="col-xl-4 col-lg-5">
+            <div class="card border-0 shadow-sm h-100 animate__animated animate__fadeInRight">
+                <div class="card-header border-0 text-white" style="background: var(--secondary-gradient);">
+                    <h5 class="mb-0 fw-bold">
+                        <i class="fas fa-history me-2"></i>Chat Sessions
+                    </h5>
+                    <small class="opacity-75">Previous conversations</small>
+                </div>
+                <div class="card-body p-0" style="height: 400px; overflow-y: auto;">
+                    {% if sessions and sessions|length > 0 %}
+                    <div class="list-group list-group-flush">
+                        {% for session in sessions %}
+                        <div class="list-group-item list-group-item-action border-0 py-3 session-item" 
+                             data-session-id="{{ session.id }}" onclick="loadSession('{{ session.id }}')">
+                            <div class="d-flex align-items-center">
+                                <div class="me-3">
+                                    <i class="fas fa-comment-dots fa-lg text-primary"></i>
+                                </div>
+                                <div class="flex-grow-1">
+                                    <h6 class="mb-1">Session {{ session.id }}</h6>
+                                    <small class="text-muted">
+                                        {{ session.updated_at.strftime('%Y-%m-%d %H:%M') }}
+                                    </small>
+                                </div>
+                                <div>
+                                    <span class="badge bg-light text-dark">
+                                        {{ session.messages|length if session.messages else 0 }} msgs
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="text-center py-5">
+                        <i class="fas fa-history fa-3x text-muted mb-3"></i>
+                        <p class="text-muted mb-0">No chat sessions yet</p>
+                        <small class="text-muted">Start a conversation to create your first session</small>
+                    </div>
+                    {% endif %}
+                </div>
+                <div class="card-footer border-0 bg-transparent">
+                    <button class="btn btn-outline-primary w-100" onclick="newSession()">
+                        <i class="fas fa-plus me-2"></i>New Session
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Loading Modal -->
+<div class="modal fade" id="loadingModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-sm modal-dialog-centered">
+        <div class="modal-content border-0">
+            <div class="modal-body text-center py-4">
+                <div class="loading-spinner mb-3"></div>
+                <p class="mb-0">AI is thinking...</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+let currentSessionId = null;
+
+// Chat functionality
+document.getElementById('chat-form').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const messageInput = document.getElementById('message-input');
+    const message = messageInput.value.trim();
+    
+    if (!message) return;
+    
+    // Show user message
+    addMessage(message, 'user');
+    messageInput.value = '';
+    
+    // Show loading
+    const loadingModal = new bootstrap.Modal(document.getElementById('loadingModal'));
+    loadingModal.show();
+    
+    try {
+        const response = await fetch('/api/chat', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                message: message,
+                session_id: currentSessionId
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (response.ok && data.response) {
+            addMessage(data.response, 'assistant');
+            currentSessionId = data.session_id;
+        } else {
+            addMessage('Sorry, I encountered an error. Please try again.', 'assistant', true);
+        }
+    } catch (error) {
+        console.error('Chat error:', error);
+        addMessage('Sorry, I encountered an error. Please try again.', 'assistant', true);
+    } finally {
+        loadingModal.hide();
+    }
+});
+
+function addMessage(content, sender, isError = false) {
+    const messagesContainer = document.getElementById('chat-messages');
+    
+    // Remove empty state if it exists
+    const emptyState = messagesContainer.querySelector('.text-center.text-muted');
+    if (emptyState) {
+        emptyState.remove();
+    }
+    
+    const messageDiv = document.createElement('div');
+    messageDiv.className = `chat-message ${sender}`;
+    
+    if (sender === 'user') {
+        messageDiv.innerHTML = `
+            <div class="d-flex justify-content-end align-items-start gap-2">
+                <div class="flex-grow-1" style="max-width: 80%;">
+                    <div class="message-content text-end">
+                        ${content}
+                    </div>
+                    <div class="text-end mt-1">
+                        <small class="text-muted">${new Date().toLocaleTimeString()}</small>
+                    </div>
+                </div>
+                <div class="flex-shrink-0">
+                    <i class="fas fa-user fa-lg text-primary"></i>
+                </div>
+            </div>
+        `;
+    } else {
+        messageDiv.innerHTML = `
+            <div class="d-flex align-items-start gap-2">
+                <div class="flex-shrink-0">
+                    <i class="fas fa-robot fa-lg ${isError ? 'text-danger' : 'text-success'}"></i>
+                </div>
+                <div class="flex-grow-1" style="max-width: 80%;">
+                    <div class="message-content ${isError ? 'bg-danger text-white border-danger' : ''}">
+                        ${content}
+                    </div>
+                    <div class="mt-1">
+                        <small class="text-muted">${new Date().toLocaleTimeString()}</small>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+    
+    messagesContainer.appendChild(messageDiv);
+    messagesContainer.scrollTop = messagesContainer.scrollHeight;
+}
+
+function clearChat() {
+    const messagesContainer = document.getElementById('chat-messages');
+    messagesContainer.innerHTML = `
+        <div class="text-center text-muted py-5">
+            <i class="fas fa-comments fa-3x mb-3 opacity-50"></i>
+            <p class="mb-0">Start a conversation with your AI assistant</p>
+            <small>Ask questions about your uploaded documents</small>
+        </div>
+    `;
+    currentSessionId = null;
+}
+
+function newSession() {
+    clearChat();
+    document.getElementById('message-input').focus();
+}
+
+function loadSession(sessionId) {
+    // Implement session loading functionality
+    console.log('Loading session:', sessionId);
+}
+
+// Initialize
+document.addEventListener('DOMContentLoaded', function() {
+    document.getElementById('message-input').focus();
+});
+</script>
+
+<style>
+/* Custom scrollbar for chat sessions */
+.card-body[style*="overflow-y"] {
+    scrollbar-width: thin;
+    scrollbar-color: #dee2e6 transparent;
+}
+
+.card-body[style*="overflow-y"]::-webkit-scrollbar {
+    width: 6px;
+}
+
+.card-body[style*="overflow-y"]::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.card-body[style*="overflow-y"]::-webkit-scrollbar-thumb {
+    background: #dee2e6;
+    border-radius: 3px;
+}
+
+.card-body[style*="overflow-y"]::-webkit-scrollbar-thumb:hover {
+    background: #ced4da;
+}
+
+/* Ensure session items maintain their hover effects */
+.session-item:hover {
+    background-color: rgba(0, 123, 255, 0.1);
+    transform: translateX(2px);
+    transition: all 0.2s ease;
+}
+
+/* Add subtle border between sessions */
+.session-item:not(:last-child) {
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05) !important;
+}
+</style>
+
+{% endblock %}

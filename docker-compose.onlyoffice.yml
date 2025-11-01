@@ -1,0 +1,57 @@
+version: '3.8'
+
+services:
+  onlyoffice-documentserver:
+    container_name: onlyoffice-documentserver
+    image: onlyoffice/documentserver:latest
+    restart: always
+    environment:
+      - JWT_ENABLED=true
+      - JWT_SECRET=ocr-agent-secret-key-2025
+      - JWT_HEADER=Authorization
+      - JWT_IN_BODY=true
+    ports:
+      - "8000:80"
+    volumes:
+      - onlyoffice-data:/var/www/onlyoffice/Data
+      - onlyoffice-logs:/var/log/onlyoffice
+      - onlyoffice-cache:/var/lib/onlyoffice/documentserver/App_Data/cache/files
+      - onlyoffice-forgotten:/var/lib/onlyoffice/documentserver/App_Data/cache/forgotten
+    stdin_open: true
+    tty: true
+    networks:
+      - onlyoffice-network
+
+  # Redis for OnlyOffice caching (optional but recommended)
+  redis:
+    container_name: onlyoffice-redis
+    image: redis:7-alpine
+    restart: always
+    ports:
+      - "6379:6379"
+    networks:
+      - onlyoffice-network
+
+  # RabbitMQ for OnlyOffice messaging (optional but recommended for production)
+  rabbitmq:
+    container_name: onlyoffice-rabbitmq
+    image: rabbitmq:3-management
+    restart: always
+    environment:
+      - RABBITMQ_DEFAULT_USER=onlyoffice
+      - RABBITMQ_DEFAULT_PASS=onlyoffice2025
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    networks:
+      - onlyoffice-network
+
+volumes:
+  onlyoffice-data:
+  onlyoffice-logs:
+  onlyoffice-cache:
+  onlyoffice-forgotten:
+
+networks:
+  onlyoffice-network:
+    driver: bridge

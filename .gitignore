@@ -1,0 +1,166 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Virtual Environment
+.venv/
+venv/
+ENV/
+env/
+.env.local
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Flask
+instance/
+.webassets-cache
+*.log
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+
+# Uploads and Storage
+uploads/*
+!uploads/.gitkeep
+storage/*
+!storage/.gitkeep
+
+# Logs
+logs/
+*.log
+server_diagnostic.log
+
+# Environment
+.env
+.env.local
+.env.development
+.env.staging
+# Keep .env.example and .env.production as templates
+
+# OnlyOffice
+onlyoffice-documentserver.exe
+onlyoffice/
+
+# Test Coverage
+htmlcov/
+.tox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+.hypothesis/
+.pytest_cache/
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# Celery
+celerybeat-schedule
+celerybeat.pid
+
+# Migrations (keep structure, not generated files)
+migrations/versions/*.pyc
+
+# Backup files
+*.backup
+*.bak
+config.py.backup
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+
+# Archives
+*.zip
+*.tar.gz
+*.rar
+
+# Large files
+*.mp4
+*.avi
+*.mov
+*.pdf
+*.docx
+*.xlsx
+# Allow sample test files in tests/fixtures/
+
+# Node modules (if any frontend build)
+node_modules/
+package-lock.json
+yarn.lock
+
+# Static build files
+static/dist/
+static/build/
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# Linux
+*~
+
+# AI/ML Models (large files)
+*.bin
+*.pt
+*.pth
+*.h5
+*.pkl
+models/downloads/
+!models/.gitkeep
+
+# Documentation build
+docs/_build/
+docs/.doctrees/
+
+# Security
+*.pem
+*.key
+*.crt
+*.env
+secrets/
+credentials/
+
+# Performance profiling
+*.prof
+*.lprof
+
+# Sentry
+.sentryclirc

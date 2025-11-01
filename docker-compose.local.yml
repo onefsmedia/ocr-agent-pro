@@ -1,0 +1,72 @@
+# Simplified Docker Compose for Local Deployment
+# This version uses locally buildable images without external dependencies
+
+version: '3.8'
+
+services:
+  # PostgreSQL database
+  postgres:
+    image: postgres:16
+    container_name: ocr_postgres
+    environment:
+      POSTGRES_DB: ocr_agent
+      POSTGRES_USER: renderman
+      POSTGRES_PASSWORD: Master@2025
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5433:5432"  # Use different port to avoid conflict with local PostgreSQL
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U renderman -d ocr_agent"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - ocr_network
+
+  # Redis for background tasks
+  redis:
+    image: redis:7-alpine
+    container_name: ocr_redis
+    ports:
+      - "6380:6379"  # Use different port to avoid conflicts
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - ocr_network
+
+  # OCR Agent application
+  ocr_agent:
+    build:
+      context: .
+      dockerfile: Dockerfile.local
+    container_name: ocr_agent_app
+    environment:
+      - DATABASE_URL=postgresql://renderman:Master@2025@postgres:5432/ocr_agent
+      - REDIS_URL=redis://redis:6379
+      - FLASK_ENV=production
+      - DEEPSEEK_OCR_URL=http://deepseek-ocr:8001
+      - TESSERACT_PATH=/usr/bin/tesseract
+    ports:
+      - "5001:5000"  # Use different port to avoid conflict with local Flask
+    volumes:
+      - ./uploads:/app/uploads
+      - ./logs:/app/logs
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - ocr_network
+    restart: unless-stopped
+
+networks:
+  ocr_network:
+    driver: bridge
+
+volumes:
+  postgres_data:

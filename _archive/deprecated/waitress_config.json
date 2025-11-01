@@ -1,0 +1,23 @@
+{
+  "server": {
+    "type": "waitress",
+    "host": "0.0.0.0",
+    "port": 5000,
+    "threads": 6,
+    "connection_limit": 1000,
+    "cleanup_interval": 30,
+    "channel_timeout": 120,
+    "url_scheme": "http",
+    "ident": "OCR-Agent-Pro/1.0"
+  },
+  "features": {
+    "auto_restart": true,
+    "max_restarts": 10,
+    "restart_delay": 5,
+    "health_check": true
+  },
+  "logging": {
+    "level": "INFO",
+    "format": "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+  }
+}

@@ -1,0 +1,638 @@
+{% extends "base.html" %}
+
+{% block title %}Database Status - OCR Agent{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h1 class="mb-4">
+            <i class="fas fa-database me-2"></i>Database Status & Activity
+            <a href="{{ url_for('main.dashboard') }}" class="btn btn-outline-secondary float-end">
+                <i class="fas fa-arrow-left"></i> Back to Dashboard
+            </a>
+        </h1>
+    </div>
+</div>
+
+<!-- Database Connection Status -->
+<div class="row mb-4">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h5><i class="fas fa-server"></i> Database Connection</h5>
+            </div>
+            <div class="card-body">
+                <div class="row text-center">
+                    <div class="col-6">
+                        <div class="border rounded p-3">
+                            <i class="fas fa-database fa-3x text-primary mb-2"></i>
+                            <h6>Current Database</h6>
+                            {% if database_status == 'connected' %}
+                                <span class="badge bg-success">Connected</span>
+                                <p class="small mt-2 mb-0">PostgreSQL</p>
+                            {% elif database_status == 'disconnected' %}
+                                <span class="badge bg-warning">SQLite Fallback</span>
+                                <p class="small mt-2 mb-0">PostgreSQL unavailable</p>
+                            {% else %}
+                                <span class="badge bg-secondary">Unknown</span>
+                            {% endif %}
+                            <div class="mt-2">
+                                <small id="postgres-info" class="text-muted">Version: --</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="border rounded p-3">
+                            <i class="fas fa-vector-square fa-3x text-info mb-2"></i>
+                            <h6>pgvector</h6>
+                            <span id="pgvector-status" class="badge bg-secondary">Checking...</span>
+                            <div class="mt-2">
+                                <small id="pgvector-info" class="text-muted">Extension: --</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="text-center mt-3">
+                    <button class="btn btn-outline-primary btn-sm" onclick="refreshConnectionStatus()">
+                        <i class="fas fa-sync"></i> Refresh Status
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header bg-success text-white">
+                <h5><i class="fas fa-chart-bar"></i> Database Statistics</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-6">
+                        <div class="text-center">
+                            <h4 id="total-documents" class="text-primary">{{ doc_count }}</h4>
+                            <small>Total Documents</small>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="text-center">
+                            <h4 id="total-chunks" class="text-info">{{ chunk_count }}</h4>
+                            <small>Text Chunks</small>
+                        </div>
+                    </div>
+                </div>
+                <hr>
+                <div class="row">
+                    <div class="col-6">
+                        <div class="text-center">
+                            <h4 id="db-size" class="text-warning">--</h4>
+                            <small>Database Size</small>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="text-center">
+                            <h4 id="processing-queue" class="text-secondary">--</h4>
+                            <small>Processing Queue</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Real-time Document Activity -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header bg-info text-white d-flex justify-content-between align-items-center">
+                <h5><i class="fas fa-activity"></i> Real-time Document Activity</h5>
+                <div>
+                    <button class="btn btn-sm btn-outline-light" onclick="toggleAutoRefresh()">
+                        <i id="auto-refresh-icon" class="fas fa-play"></i> 
+                        <span id="auto-refresh-text">Start Auto Refresh</span>
+                    </button>
+                    <button class="btn btn-sm btn-outline-light" onclick="clearActivityLog()">
+                        <i class="fas fa-trash"></i> Clear
+                    </button>
+                </div>
+            </div>
+            <div class="card-body">
+                <div id="activity-feed" class="activity-feed" style="max-height: 400px; overflow-y: auto;">
+                    <div class="text-center text-muted">
+                        <i class="fas fa-clock fa-2x mb-2"></i>
+                        <p>Waiting for document activity...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Document Processing Details -->
+<div class="row mb-4">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header bg-warning text-dark">
+                <h5><i class="fas fa-cogs"></i> Currently Processing</h5>
+            </div>
+            <div class="card-body">
+                <div id="current-processing">
+                    <div class="text-center text-muted">
+                        <i class="fas fa-check-circle fa-2x mb-2"></i>
+                        <p>No documents currently processing</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header bg-secondary text-white">
+                <h5><i class="fas fa-history"></i> Recent Completions</h5>
+            </div>
+            <div class="card-body">
+                <div id="recent-completions">
+                    <div class="text-center text-muted">
+                        <i class="fas fa-inbox fa-2x mb-2"></i>
+                        <p>No recent completions</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Document Table with Enhanced Details -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header bg-dark text-white">
+                <h5><i class="fas fa-table"></i> Document Details</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-striped" id="documents-table">
+                        <thead>
+                            <tr>
+                                <th>Document</th>
+                                <th>Status</th>
+                                <th>OCR Method</th>
+                                <th>Content Summary</th>
+                                <th>Completion Time</th>
+                                <th>File Info</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="documents-tbody">
+                            {% for doc in documents %}
+                            <tr data-doc-id="{{ doc.id }}">
+                                <td>
+                                    <strong>{{ doc.name }}</strong>
+                                    <br>
+                                    <small class="text-muted">ID: {{ doc.id }}</small>
+                                </td>
+                                <td>
+                                    <span class="badge bg-{{ 'success' if doc.processing_status == 'completed' else 'warning' if doc.processing_status == 'processing' else 'danger' if doc.processing_status == 'failed' else 'secondary' }}">
+                                        {{ doc.processing_status.title() }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <span class="badge bg-info">{{ doc.ocr_method or 'N/A' }}</span>
+                                </td>
+                                <td>
+                                    <small>
+                                        {% if doc.extracted_text %}
+                                            {{ doc.extracted_text[:100] }}{% if doc.extracted_text|length > 100 %}...{% endif %}
+                                            <br>
+                                            <span class="text-muted">{{ doc.extracted_text|length }} chars</span>
+                                        {% else %}
+                                            <span class="text-muted">No content extracted</span>
+                                        {% endif %}
+                                    </small>
+                                </td>
+                                <td>
+                                    {% if doc.updated_at %}
+                                        {{ doc.updated_at.strftime('%Y-%m-%d %H:%M:%S') }}
+                                        <br>
+                                        <small class="text-muted">{{ moment(doc.updated_at).fromNow() if moment else 'N/A' }}</small>
+                                    {% else %}
+                                        <span class="text-muted">N/A</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <small>
+                                        <strong>Type:</strong> {{ doc.mime_type or 'Unknown' }}
+                                        <br>
+                                        <strong>Size:</strong> {{ (doc.file_size / 1024 / 1024)|round(2) if doc.file_size else 'Unknown' }} MB
+                                    </small>
+                                </td>
+                                <td>
+                                    <div class="btn-group btn-group-sm">
+                                        <button class="btn btn-outline-primary" onclick="viewDocumentDetails('{{ doc.id }}')" title="View Details">
+                                            <i class="fas fa-eye"></i>
+                                        </button>
+                                        <button class="btn btn-outline-success" onclick="reprocessDocument('{{ doc.id }}')" title="Reprocess">
+                                            <i class="fas fa-redo"></i>
+                                        </button>
+                                        <button class="btn btn-outline-danger" onclick="deleteDocument('{{ doc.id }}')" title="Delete">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="7" class="text-center text-muted">No documents found</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block styles %}
+<style>
+.activity-feed {
+    border: 1px solid #dee2e6;
+    border-radius: 0.375rem;
+    padding: 1rem;
+    background-color: #f8f9fa;
+}
+
+.activity-item {
+    display: flex;
+    align-items: flex-start;
+    margin-bottom: 1rem;
+    padding: 0.75rem;
+    background: white;
+    border-radius: 0.375rem;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.activity-icon {
+    flex-shrink: 0;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 1rem;
+    font-size: 1.2rem;
+}
+
+.activity-content {
+    flex-grow: 1;
+}
+
+.activity-content h6 {
+    margin-bottom: 0.25rem;
+    font-size: 0.9rem;
+}
+
+.activity-content p {
+    margin-bottom: 0.25rem;
+    font-size: 0.8rem;
+    color: #6c757d;
+}
+
+.activity-time {
+    font-size: 0.75rem;
+    color: #adb5bd;
+}
+
+.processing-item {
+    border-left: 4px solid #ffc107;
+    padding-left: 1rem;
+    margin-bottom: 1rem;
+}
+
+.completed-item {
+    border-left: 4px solid #198754;
+    padding-left: 1rem;
+    margin-bottom: 1rem;
+}
+</style>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let autoRefreshInterval = null;
+let isAutoRefreshActive = false;
+
+// Initialize page
+document.addEventListener('DOMContentLoaded', function() {
+    refreshConnectionStatus();
+    refreshDatabaseStats();
+    loadDocumentActivity();
+    loadCurrentProcessing();
+    loadRecentCompletions();
+});
+
+// Connection status
+function refreshConnectionStatus() {
+    fetch('/api/database/status')
+    .then(response => response.json())
+    .then(data => {
+        // PostgreSQL status
+        const postgresStatus = document.getElementById('postgres-status');
+        const postgresInfo = document.getElementById('postgres-info');
+        
+        if (data.postgres.connected) {
+            postgresStatus.textContent = 'Connected';
+            postgresStatus.className = 'badge bg-success';
+            postgresInfo.textContent = `Version: ${data.postgres.version || 'Unknown'}`;
+        } else {
+            postgresStatus.textContent = 'Disconnected';
+            postgresStatus.className = 'badge bg-danger';
+            postgresInfo.textContent = 'Error: ' + (data.postgres.error || 'Connection failed');
+        }
+        
+        // pgvector status
+        const pgvectorStatus = document.getElementById('pgvector-status');
+        const pgvectorInfo = document.getElementById('pgvector-info');
+        
+        if (data.pgvector.enabled) {
+            pgvectorStatus.textContent = 'Ready';
+            pgvectorStatus.className = 'badge bg-success';
+            pgvectorInfo.textContent = `Extension: ${data.pgvector.version || 'Installed'}`;
+        } else {
+            pgvectorStatus.textContent = 'Not Available';
+            pgvectorStatus.className = 'badge bg-warning';
+            pgvectorInfo.textContent = 'Extension not installed';
+        }
+    })
+    .catch(error => {
+        console.error('Error fetching database status:', error);
+    });
+}
+
+function refreshDatabaseStats() {
+    fetch('/api/database/stats')
+    .then(response => response.json())
+    .then(data => {
+        document.getElementById('total-documents').textContent = data.documents || '0';
+        document.getElementById('total-chunks').textContent = data.chunks || '0';
+        document.getElementById('db-size').textContent = data.size || 'Unknown';
+        document.getElementById('processing-queue').textContent = data.processing || '0';
+    })
+    .catch(error => {
+        console.error('Error fetching database stats:', error);
+    });
+}
+
+function loadDocumentActivity() {
+    fetch('/api/documents/activity')
+    .then(response => response.json())
+    .then(data => {
+        const activityFeed = document.getElementById('activity-feed');
+        
+        if (data.activities && data.activities.length > 0) {
+            activityFeed.innerHTML = '';
+            data.activities.forEach(activity => {
+                addActivityItem(activity);
+            });
+        } else {
+            activityFeed.innerHTML = `
+                <div class="text-center text-muted">
+                    <i class="fas fa-clock fa-2x mb-2"></i>
+                    <p>No recent activity</p>
+                </div>
+            `;
+        }
+    })
+    .catch(error => {
+        console.error('Error loading document activity:', error);
+    });
+}
+
+function addActivityItem(activity) {
+    const activityFeed = document.getElementById('activity-feed');
+    
+    // Remove placeholder if it exists
+    const placeholder = activityFeed.querySelector('.text-center.text-muted');
+    if (placeholder) {
+        placeholder.remove();
+    }
+    
+    const iconClass = getActivityIcon(activity.type);
+    const iconColor = getActivityIconColor(activity.type);
+    
+    const activityItem = document.createElement('div');
+    activityItem.className = 'activity-item';
+    activityItem.innerHTML = `
+        <div class="activity-icon bg-${iconColor} text-white">
+            <i class="fas ${iconClass}"></i>
+        </div>
+        <div class="activity-content">
+            <h6>${activity.title}</h6>
+            <p>${activity.description}</p>
+            <div class="activity-time">${formatTimeAgo(activity.timestamp)}</div>
+        </div>
+    `;
+    
+    // Insert at the top
+    activityFeed.insertBefore(activityItem, activityFeed.firstChild);
+    
+    // Keep only last 20 items
+    while (activityFeed.children.length > 20) {
+        activityFeed.removeChild(activityFeed.lastChild);
+    }
+}
+
+function getActivityIcon(type) {
+    const icons = {
+        'upload': 'fa-upload',
+        'processing': 'fa-cogs',
+        'completed': 'fa-check-circle',
+        'failed': 'fa-exclamation-triangle',
+        'deleted': 'fa-trash',
+        'reprocessed': 'fa-redo'
+    };
+    return icons[type] || 'fa-file';
+}
+
+function getActivityIconColor(type) {
+    const colors = {
+        'upload': 'primary',
+        'processing': 'warning',
+        'completed': 'success',
+        'failed': 'danger',
+        'deleted': 'secondary',
+        'reprocessed': 'info'
+    };
+    return colors[type] || 'secondary';
+}
+
+function loadCurrentProcessing() {
+    fetch('/api/documents/processing')
+    .then(response => response.json())
+    .then(data => {
+        const container = document.getElementById('current-processing');
+        
+        if (data.processing && data.processing.length > 0) {
+            container.innerHTML = '';
+            data.processing.forEach(doc => {
+                const item = document.createElement('div');
+                item.className = 'processing-item';
+                item.innerHTML = `
+                    <h6>${doc.name}</h6>
+                    <p>OCR Method: ${doc.ocr_method || 'Determining...'}</p>
+                    <small class="text-muted">Started: ${formatTimeAgo(doc.created_at)}</small>
+                    <div class="progress mt-2">
+                        <div class="progress-bar progress-bar-striped progress-bar-animated" 
+                             style="width: ${doc.progress || 50}%"></div>
+                    </div>
+                `;
+                container.appendChild(item);
+            });
+        } else {
+            container.innerHTML = `
+                <div class="text-center text-muted">
+                    <i class="fas fa-check-circle fa-2x mb-2"></i>
+                    <p>No documents currently processing</p>
+                </div>
+            `;
+        }
+    })
+    .catch(error => {
+        console.error('Error loading current processing:', error);
+    });
+}
+
+function loadRecentCompletions() {
+    fetch('/api/documents/recent-completions')
+    .then(response => response.json())
+    .then(data => {
+        const container = document.getElementById('recent-completions');
+        
+        if (data.completions && data.completions.length > 0) {
+            container.innerHTML = '';
+            data.completions.forEach(doc => {
+                const item = document.createElement('div');
+                item.className = 'completed-item';
+                item.innerHTML = `
+                    <h6>${doc.name}</h6>
+                    <p>Extracted: ${doc.extracted_text ? doc.extracted_text.length + ' characters' : 'No content'}</p>
+                    <small class="text-muted">Completed: ${formatTimeAgo(doc.updated_at)}</small>
+                `;
+                container.appendChild(item);
+            });
+        } else {
+            container.innerHTML = `
+                <div class="text-center text-muted">
+                    <i class="fas fa-inbox fa-2x mb-2"></i>
+                    <p>No recent completions</p>
+                </div>
+            `;
+        }
+    })
+    .catch(error => {
+        console.error('Error loading recent completions:', error);
+    });
+}
+
+function toggleAutoRefresh() {
+    const icon = document.getElementById('auto-refresh-icon');
+    const text = document.getElementById('auto-refresh-text');
+    
+    if (isAutoRefreshActive) {
+        clearInterval(autoRefreshInterval);
+        icon.className = 'fas fa-play';
+        text.textContent = 'Start Auto Refresh';
+        isAutoRefreshActive = false;
+    } else {
+        autoRefreshInterval = setInterval(() => {
+            refreshDatabaseStats();
+            loadDocumentActivity();
+            loadCurrentProcessing();
+            loadRecentCompletions();
+        }, 5000); // Refresh every 5 seconds
+        
+        icon.className = 'fas fa-pause';
+        text.textContent = 'Stop Auto Refresh';
+        isAutoRefreshActive = true;
+    }
+}
+
+function clearActivityLog() {
+    if (confirm('Clear all activity log items?')) {
+        document.getElementById('activity-feed').innerHTML = `
+            <div class="text-center text-muted">
+                <i class="fas fa-clock fa-2x mb-2"></i>
+                <p>Activity log cleared</p>
+            </div>
+        `;
+    }
+}
+
+// Document actions
+function viewDocumentDetails(docId) {
+    window.open(`/api/documents/${docId}`, '_blank');
+}
+
+function reprocessDocument(docId) {
+    if (confirm('Reprocess this document?')) {
+        fetch(`/api/documents/${docId}/reprocess`, {
+            method: 'POST'
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('Document queued for reprocessing');
+                setTimeout(() => {
+                    location.reload();
+                }, 1000);
+            } else {
+                alert('Error: ' + data.error);
+            }
+        })
+        .catch(error => {
+            alert('Error: ' + error.message);
+        });
+    }
+}
+
+function deleteDocument(docId) {
+    if (confirm('Delete this document permanently?')) {
+        fetch(`/api/documents/${docId}`, {
+            method: 'DELETE'
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                document.querySelector(`tr[data-doc-id="${docId}"]`).remove();
+                refreshDatabaseStats();
+            } else {
+                alert('Error: ' + data.error);
+            }
+        })
+        .catch(error => {
+            alert('Error: ' + error.message);
+        });
+    }
+}
+
+// Utility functions
+function formatTimeAgo(timestamp) {
+    const date = new Date(timestamp);
+    const now = new Date();
+    const diffMs = now - date;
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMs / 3600000);
+    const diffDays = Math.floor(diffMs / 86400000);
+    
+    if (diffMins < 1) return 'Just now';
+    if (diffMins < 60) return `${diffMins} minute${diffMins > 1 ? 's' : ''} ago`;
+    if (diffHours < 24) return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
+    return `${diffDays} day${diffDays > 1 ? 's' : ''} ago`;
+}
+</script>
+{% endblock %}
