@@ -138,6 +138,8 @@ sudo systemctl enable --now ocr-agent
 
 - **[Technical Specifications](TECHNICAL_SPECIFICATIONS.md)** - Architecture and API reference
 - **[Deployment Guide](docs/deployment/DEPLOYMENT_GUIDE.md)** - Complete deployment instructions
+- **[DevOps Checklist](DEVOPS_CHECKLIST.md)** - Production deployment checklist
+- **[Development Prompt Guide](DEVELOPMENT_PROMPT_GUIDE.md)** - Reusable prompts for similar projects
 - **[Change Log](CHANGELOG.md)** - Version history
 - **[Scripts Documentation](scripts/README.md)** - Utility scripts guide
 - **[Tests Documentation](tests/README.md)** - Testing guidelines
