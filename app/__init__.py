@@ -57,6 +57,7 @@ def create_app(config_name=None):
     from app.api.deepseek_routes import deepseek_bp
     from app.api.lesson_routes import lesson_bp
     from app.api.storage_routes import storage_bp
+    from app.api.prompt_routes import prompt_api
     from app.routes.onlyoffice_routes import onlyoffice_bp
     
     app.register_blueprint(main_bp)
@@ -65,6 +66,7 @@ def create_app(config_name=None):
     app.register_blueprint(deepseek_bp)
     app.register_blueprint(lesson_bp)
     app.register_blueprint(storage_bp)
+    app.register_blueprint(prompt_api)  # Has its own url_prefix='/api/prompts'
     app.register_blueprint(onlyoffice_bp)
     
     return app

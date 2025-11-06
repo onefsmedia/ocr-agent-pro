@@ -3,6 +3,42 @@
 {% block title %}System Settings - OCR Agent Pro{% endblock %}
 
 {% block content %}
+<style>
+.clickable {
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.clickable:hover {
+    transform: scale(1.05);
+    opacity: 0.8;
+}
+
+#prompt-categories .list-group-item {
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+#prompt-categories .list-group-item:hover {
+    background-color: #f8f9fa;
+}
+
+#prompt-categories .list-group-item.active {
+    background-color: #0d6efd;
+    color: white;
+}
+
+.config-card-hover:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+#test-results-settings {
+    max-height: 200px;
+    overflow-y: auto;
+}
+</style>
+
 <!-- Enhanced Header -->
 <div class="row mb-4">
     <div class="col-12">
@@ -41,12 +77,17 @@
         </button>
     </li>
     <li class="nav-item" role="presentation">
-        <button class="nav-link" id="ai-tab" data-bs-toggle="tab" data-bs-target="#ai" type="button" role="tab">
+        <button class="nav-link rounded-pill mx-1" id="ai-tab" data-bs-toggle="tab" data-bs-target="#ai" type="button" role="tab">
             <i class="fas fa-robot"></i> AI/LLM
         </button>
     </li>
     <li class="nav-item" role="presentation">
-        <button class="nav-link" id="system-tab" data-bs-toggle="tab" data-bs-target="#system" type="button" role="tab">
+        <button class="nav-link rounded-pill mx-1" id="prompts-tab" data-bs-toggle="tab" data-bs-target="#prompts" type="button" role="tab">
+            <i class="fas fa-magic me-2"></i>AI Prompts
+        </button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link rounded-pill mx-1" id="system-tab" data-bs-toggle="tab" data-bs-target="#system" type="button" role="tab">
             <i class="fas fa-server"></i> System
         </button>
     </li>
@@ -439,6 +480,186 @@
                         </button>
                     </div>
                 </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- AI Prompts Settings -->
+    <div class="tab-pane fade" id="prompts" role="tabpanel">
+        <div class="card mt-3">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5><i class="fas fa-magic"></i> AI Prompt Management</h5>
+                <div>
+                    <button type="button" class="btn btn-success btn-sm me-2" id="new-prompt-btn">
+                        <i class="fas fa-plus me-1"></i>New Prompt
+                    </button>
+                    <button type="button" class="btn btn-info btn-sm me-2" onclick="resetAllPrompts()">
+                        <i class="fas fa-undo me-1"></i>Reset All
+                    </button>
+                    <a href="{{ url_for('main.prompt_panel') }}" class="btn btn-primary btn-sm" target="_blank">
+                        <i class="fas fa-external-link-alt me-1"></i>Full Editor
+                    </a>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <!-- Left Column - Prompt Categories -->
+                    <div class="col-md-3">
+                        <h6 class="fw-bold mb-3">Prompt Categories</h6>
+                        <div class="list-group" id="prompt-categories">
+                            <a href="#" class="list-group-item list-group-item-action active" data-category="system">
+                                <i class="fas fa-robot me-2"></i>System
+                            </a>
+                            <a href="#" class="list-group-item list-group-item-action" data-category="ocr">
+                                <i class="fas fa-eye me-2"></i>OCR Analysis
+                            </a>
+                            <a href="#" class="list-group-item list-group-item-action" data-category="chat">
+                                <i class="fas fa-comments me-2"></i>Chat Assistant
+                            </a>
+                            <a href="#" class="list-group-item list-group-item-action" data-category="analysis">
+                                <i class="fas fa-search me-2"></i>Document Analysis
+                            </a>
+                            <a href="#" class="list-group-item list-group-item-action" data-category="lesson">
+                                <i class="fas fa-graduation-cap me-2"></i>Lesson Generator
+                            </a>
+                        </div>
+                        
+                        <!-- Quick Actions -->
+                        <div class="mt-3">
+                            <h6 class="fw-bold mb-2">Quick Actions</h6>
+                            <div class="d-grid gap-2">
+                                <button class="btn btn-outline-success btn-sm" onclick="exportAllPrompts()">
+                                    <i class="fas fa-download me-1"></i>Export All
+                                </button>
+                                <button class="btn btn-outline-warning btn-sm" onclick="importPrompts()">
+                                    <i class="fas fa-upload me-1"></i>Import
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Middle Column - Prompt Editor -->
+                    <div class="col-md-6">
+                        <h6 class="fw-bold mb-3">Prompt Editor</h6>
+                        <form id="prompt-editor-form">
+                            <div class="mb-3">
+                                <label for="prompt-name-settings" class="form-label fw-bold">Prompt Name</label>
+                                <input type="text" class="form-control" id="prompt-name-settings" placeholder="Enter prompt name">
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="prompt-description-settings" class="form-label fw-bold">Description</label>
+                                <input type="text" class="form-control" id="prompt-description-settings" placeholder="Brief description">
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="prompt-content-settings" class="form-label fw-bold">Prompt Content</label>
+                                <textarea class="form-control" id="prompt-content-settings" rows="10" 
+                                          placeholder="Enter your prompt content here..."></textarea>
+                                <div class="form-text">
+                                    <small>Use variables: {document_content}, {user_query}, {context}, {file_name}</small>
+                                </div>
+                            </div>
+                            
+                            <!-- Advanced Settings (Collapsible) -->
+                            <div class="mb-3">
+                                <button class="btn btn-outline-secondary btn-sm" type="button" 
+                                        data-bs-toggle="collapse" data-bs-target="#advanced-settings">
+                                    <i class="fas fa-cog me-1"></i>Advanced Settings
+                                </button>
+                            </div>
+                            
+                            <div class="collapse" id="advanced-settings">
+                                <div class="card card-body">
+                                    <div class="row">
+                                        <div class="col-md-4">
+                                            <label for="temperature-settings" class="form-label">Temperature</label>
+                                            <input type="range" class="form-range" id="temperature-settings" 
+                                                   min="0" max="2" step="0.1" value="0.7">
+                                            <small class="text-muted">Value: <span id="temp-value-settings">0.7</span></small>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <label for="max-tokens-settings" class="form-label">Max Tokens</label>
+                                            <input type="number" class="form-control" id="max-tokens-settings" 
+                                                   value="2048" min="100" max="8192">
+                                        </div>
+                                        <div class="col-md-4">
+                                            <label for="top-p-settings" class="form-label">Top P</label>
+                                            <input type="range" class="form-range" id="top-p-settings" 
+                                                   min="0" max="1" step="0.05" value="0.9">
+                                            <small class="text-muted">Value: <span id="top-p-value-settings">0.9</span></small>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="d-flex gap-2 mt-3">
+                                <button type="button" class="btn btn-primary" onclick="saveCurrentPrompt()">
+                                    <i class="fas fa-save me-1"></i>Save Prompt
+                                </button>
+                                <button type="button" class="btn btn-outline-secondary" onclick="resetCurrentPrompt()">
+                                    <i class="fas fa-undo me-1"></i>Reset
+                                </button>
+                                <button type="button" class="btn btn-outline-info" onclick="testCurrentPromptSettings()">
+                                    <i class="fas fa-vial me-1"></i>Test
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                    
+                    <!-- Right Column - Variables & Preview -->
+                    <div class="col-md-3">
+                        <h6 class="fw-bold mb-3">Available Variables</h6>
+                        <div class="mb-3">
+                            <small class="text-muted d-block mb-2">Click to insert:</small>
+                            <div class="d-flex flex-wrap gap-1">
+                                <span class="badge bg-secondary clickable" onclick="insertVariableSettings('{user_query}')">
+                                    {user_query}
+                                </span>
+                                <span class="badge bg-secondary clickable" onclick="insertVariableSettings('{document_content}')">
+                                    {document_content}
+                                </span>
+                                <span class="badge bg-secondary clickable" onclick="insertVariableSettings('{context}')">
+                                    {context}
+                                </span>
+                                <span class="badge bg-secondary clickable" onclick="insertVariableSettings('{file_name}')">
+                                    {file_name}
+                                </span>
+                                <span class="badge bg-secondary clickable" onclick="insertVariableSettings('{ocr_text}')">
+                                    {ocr_text}
+                                </span>
+                                <span class="badge bg-secondary clickable" onclick="insertVariableSettings('{timestamp}')">
+                                    {timestamp}
+                                </span>
+                            </div>
+                        </div>
+                        
+                        <h6 class="fw-bold mb-3">Test Area</h6>
+                        <div class="mb-3">
+                            <textarea class="form-control" id="test-input-settings" rows="4" 
+                                      placeholder="Enter test input..."></textarea>
+                        </div>
+                        <button class="btn btn-warning btn-sm w-100 mb-3" onclick="runPromptTest()">
+                            <i class="fas fa-play me-1"></i>Run Test
+                        </button>
+                        
+                        <!-- Test Results -->
+                        <div id="test-results-settings" class="p-3 bg-light rounded d-none">
+                            <h6 class="fw-bold">Test Results:</h6>
+                            <div id="test-output-settings" class="text-muted">
+                                Results will appear here...
+                            </div>
+                        </div>
+                        
+                        <!-- Current Prompt Info -->
+                        <div class="mt-3 p-3 bg-info bg-opacity-10 rounded">
+                            <h6 class="fw-bold text-info">Current Prompt</h6>
+                            <div id="current-prompt-info">
+                                <small class="text-muted">Select a category to edit</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -1076,6 +1297,491 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Listen for hash changes (if user uses back/forward buttons)
     window.addEventListener('hashchange', activateTabFromHash);
+});
+
+// Add debug mode flag
+const DEBUG_MODE = true;
+
+// Simple API connectivity test
+function testAPIConnectivity() {
+    console.log('Testing API connectivity...');
+    
+    return fetch('/api/prompts/')
+        .then(response => {
+            console.log('API test response:', response.status, response.statusText);
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+            return response.json();
+        })
+        .then(data => {
+            console.log('API test success:', data);
+            return true;
+        })
+        .catch(error => {
+            console.error('API test failed:', error);
+            showNotification('API connection failed: ' + error.message, 'danger');
+            return false;
+        });
+}
+
+// Prompt Management Functions
+let currentPromptCategory = 'system';
+let currentPromptData = null;
+
+// Default prompt templates
+const defaultPromptTemplates = {
+    system: {
+        name: "System Prompt",
+        description: "Core AI behavior and personality",
+        content: "You are a helpful AI assistant specialized in document analysis and OCR. You provide accurate, helpful responses based on the content of uploaded documents. Always be clear, concise, and professional in your responses."
+    },
+    ocr: {
+        name: "OCR Analysis Prompt",
+        description: "OCR text analysis and correction",
+        content: "Analyze the following OCR extracted text and provide corrections, insights, and structure improvements:\n\n{ocr_text}\n\nFocus on:\n1. Accuracy and readability\n2. Identifying potential OCR errors\n3. Structural improvements\n4. Content understanding"
+    },
+    chat: {
+        name: "Chat Assistant Prompt",
+        description: "Interactive chat responses",
+        content: "You are an intelligent document assistant. Answer user questions based on the provided document context:\n\nContext: {context}\nUser Question: {user_query}\n\nProvide a helpful, accurate response that directly addresses the question using the available context."
+    },
+    analysis: {
+        name: "Document Analysis Prompt",
+        description: "Deep document analysis and insights",
+        content: "Perform a comprehensive analysis of the following document:\n\n{document_content}\n\nProvide insights on:\n1. Key topics and themes\n2. Important information and findings\n3. Document structure and organization\n4. Recommendations and next steps\n5. Summary of main points"
+    },
+    lesson: {
+        name: "Lesson Generator Prompt",
+        description: "Educational content creation",
+        content: "Create comprehensive lesson notes based on the following content:\n\n{content}\n\nGenerate:\n1. Clear learning objectives\n2. Key concepts and definitions\n3. Detailed explanations with examples\n4. Practice activities and exercises\n5. Assessment questions\n6. Additional resources for further learning"
+    }
+};
+
+function editPrompt(promptKey) {
+    // Open the full prompt panel in a new tab with the specific prompt
+    const url = `{{ url_for('main.prompt_panel') }}?edit=${promptKey}`;
+    window.open(url, '_blank');
+}
+
+function resetAllPrompts() {
+    if (confirm('This will reset all prompts to their default values. Are you sure?')) {
+        fetch('/api/prompts/defaults', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showNotification('All prompts reset to defaults successfully!', 'success');
+                loadPromptCategory(currentPromptCategory);
+            } else {
+                showNotification('Error resetting prompts: ' + data.error, 'danger');
+            }
+        })
+        .catch(error => {
+            console.error('Error resetting prompts:', error);
+            showNotification('Error resetting prompts', 'danger');
+        });
+    }
+}
+
+function exportAllPrompts() {
+    fetch('/api/prompts/')
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            const dataStr = JSON.stringify(data.prompts, null, 2);
+            const dataBlob = new Blob([dataStr], {type: 'application/json'});
+            
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(dataBlob);
+            link.download = `ocr_agent_prompts_${new Date().toISOString().split('T')[0]}.json`;
+            link.click();
+            
+            showNotification('Prompts exported successfully!', 'success');
+        } else {
+            showNotification('Error exporting prompts: ' + (data.error || 'Unknown error'), 'danger');
+        }
+    })
+    .catch(error => {
+        console.error('Error exporting prompts:', error);
+        showNotification('Error exporting prompts', 'danger');
+    });
+}
+
+function importPrompts() {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.json';
+    input.onchange = function(event) {
+        const file = event.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const prompts = JSON.parse(e.target.result);
+                    
+                    if (!Array.isArray(prompts)) {
+                        throw new Error('Invalid format: Expected array of prompts');
+                    }
+                    
+                    // Save each prompt
+                    const promises = prompts.map(prompt => {
+                        return fetch('/api/prompts/save', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify({
+                                key: prompt.key || prompt.name?.toLowerCase().replace(/\s+/g, '_') + '_prompt',
+                                value: prompt.value || prompt.content,
+                                description: prompt.description
+                            })
+                        });
+                    });
+                    
+                    Promise.all(promises)
+                        .then(() => {
+                            showNotification(`Imported ${prompts.length} prompts successfully!`, 'success');
+                            loadPromptCategory(currentPromptCategory);
+                        })
+                        .catch(error => {
+                            console.error('Import error:', error);
+                            showNotification('Error importing some prompts', 'danger');
+                        });
+                        
+                } catch (error) {
+                    showNotification('Error importing prompts: Invalid JSON file', 'danger');
+                }
+            };
+            reader.readAsText(file);
+        }
+    };
+    input.click();
+}
+
+function testCurrentPromptSettings() {
+    console.log('testCurrentPromptSettings called');
+    const promptContent = document.getElementById('prompt-content-settings').value;
+    const testInput = document.getElementById('test-input-settings').value;
+    
+    console.log('Prompt content:', promptContent);
+    console.log('Test input:', testInput);
+    
+    if (!promptContent.trim()) {
+        showNotification('Please enter prompt content first', 'warning');
+        return;
+    }
+    
+    if (!testInput.trim()) {
+        showNotification('Please enter test input', 'warning');
+        return;
+    }
+    
+    // Show loading
+    const resultsDiv = document.getElementById('test-results-settings');
+    const outputDiv = document.getElementById('test-output-settings');
+    resultsDiv.classList.remove('d-none');
+    outputDiv.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Testing prompt...';
+    
+    console.log('Making request to:', '/api/prompts/test');
+    
+    fetch('/api/prompts/test', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            prompt: promptContent,
+            sample_input: testInput
+        })
+    })
+    .then(response => {
+        console.log('Test response status:', response.status);
+        console.log('Test response:', response);
+        if (!response.ok) {
+            console.error('Response not ok:', response.status, response.statusText);
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return response.json();
+    })
+    .then(data => {
+        console.log('Test response data:', data);
+        if (data.success) {
+            const result = data.test_result;
+            outputDiv.innerHTML = `
+                <div class="text-success mb-2"><i class="fas fa-check-circle me-1"></i>Test Completed</div>
+                <div><strong>Length:</strong> ${result.prompt_length} characters</div>
+                <div><strong>Variables:</strong> ${result.has_variables ? 'Found' : 'None'}</div>
+                <div class="mt-2"><strong>Status:</strong> Ready to use</div>
+            `;
+        } else {
+            outputDiv.innerHTML = `<div class="text-danger"><i class="fas fa-exclamation-circle me-1"></i>Error: ${data.error}</div>`;
+        }
+    })
+    .catch(error => {
+        console.error('Error testing prompt:', error);
+        console.error('Error details:', error.message, error.stack);
+        outputDiv.innerHTML = `<div class="text-danger"><i class="fas fa-exclamation-circle me-1"></i>Network error: ${error.message}</div>`;
+    });
+}
+
+function loadPromptCategory(category) {
+    currentPromptCategory = category;
+    
+    // Update active category
+    document.querySelectorAll('#prompt-categories .list-group-item').forEach(item => {
+        item.classList.remove('active');
+        if (item.dataset.category === category) {
+            item.classList.add('active');
+        }
+    });
+    
+    // Load prompt data from API or use defaults
+    fetch('/api/prompts/')
+    .then(response => {
+        console.log('Load prompts response status:', response.status);
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return response.json();
+    })
+    .then(data => {
+        console.log('Load prompts response data:', data);
+        if (data.success) {
+            const prompt = data.prompts.find(p => p.key === category + '_prompt') || 
+                          data.prompts.find(p => p.key.includes(category));
+            
+            if (prompt) {
+                loadPromptIntoEditor(prompt);
+            } else {
+                // Use default template
+                const template = defaultPromptTemplates[category];
+                if (template) {
+                    loadPromptIntoEditor({
+                        key: category + '_prompt',
+                        value: template.content,
+                        description: template.description,
+                        name: template.name
+                    });
+                }
+            }
+        } else {
+            console.warn('API returned success=false:', data);
+            // Use default template
+            const template = defaultPromptTemplates[category];
+            if (template) {
+                loadPromptIntoEditor({
+                    key: category + '_prompt',
+                    value: template.content,
+                    description: template.description,
+                    name: template.name
+                });
+            }
+        }
+    })
+    .catch(error => {
+        console.error('Error loading prompts:', error);
+        showNotification('Could not load prompts from server, using defaults', 'warning');
+        // Use default template
+        const template = defaultPromptTemplates[category];
+        if (template) {
+            loadPromptIntoEditor({
+                key: category + '_prompt',
+                value: template.content,
+                description: template.description,
+                name: template.name
+            });
+        }
+    });
+}
+
+function loadPromptIntoEditor(prompt) {
+    currentPromptData = prompt;
+    
+    document.getElementById('prompt-name-settings').value = prompt.name || prompt.key.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase());
+    document.getElementById('prompt-description-settings').value = prompt.description || '';
+    document.getElementById('prompt-content-settings').value = prompt.value || '';
+    
+    // Update current prompt info
+    const infoDiv = document.getElementById('current-prompt-info');
+    infoDiv.innerHTML = `
+        <div><strong>${prompt.name || 'Unnamed Prompt'}</strong></div>
+        <small class="text-muted">${prompt.description || 'No description'}</small>
+        <div class="mt-2">
+            <small><strong>Length:</strong> ${(prompt.value || '').length} chars</small>
+        </div>
+    `;
+}
+
+function saveCurrentPrompt() {
+    const name = document.getElementById('prompt-name-settings').value.trim();
+    const description = document.getElementById('prompt-description-settings').value.trim();
+    const content = document.getElementById('prompt-content-settings').value.trim();
+    
+    console.log('Save attempt:', { name, description, content: content.substring(0, 50) + '...' });
+    
+    if (!name) {
+        showNotification('Please enter a prompt name', 'warning');
+        return;
+    }
+    
+    if (!content) {
+        showNotification('Please enter prompt content', 'warning');
+        return;
+    }
+    
+    const promptKey = currentPromptData?.key || (currentPromptCategory + '_prompt');
+    
+    const promptData = {
+        key: promptKey,
+        value: content,
+        description: description || `${name} - Custom prompt for ${currentPromptCategory}`
+    };
+    
+    console.log('Sending prompt data:', promptData);
+    
+    // First test API connectivity
+    testAPIConnectivity().then(apiWorking => {
+        if (!apiWorking) {
+            return; // Error already shown
+        }
+        
+        fetch('/api/prompts/save', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(promptData)
+        })
+        .then(response => {
+            console.log('Save response status:', response.status);
+            console.log('Save response headers:', response.headers);
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            return response.json();
+        })
+        .then(data => {
+            console.log('Save response data:', data);
+            if (data.success) {
+                showNotification('Prompt saved successfully!', 'success');
+                
+                // Update current prompt data
+                if (currentPromptData) {
+                    currentPromptData.value = content;
+                    currentPromptData.description = description;
+                    currentPromptData.name = name;
+                }
+                
+                // Update the info display
+                loadPromptIntoEditor({
+                    key: promptKey,
+                    value: content,
+                    description: description,
+                    name: name
+                });
+            } else {
+                showNotification('Error saving prompt: ' + (data.error || 'Unknown error'), 'danger');
+            }
+        })
+        .catch(error => {
+            console.error('Save error:', error);
+            showNotification('Network error saving prompt: ' + error.message, 'danger');
+        });
+    });
+}
+
+function resetCurrentPrompt() {
+    if (currentPromptData) {
+        loadPromptIntoEditor(currentPromptData);
+        showNotification('Prompt reset to last saved version', 'info');
+    } else {
+        loadPromptCategory(currentPromptCategory);
+        showNotification('Prompt reset to default', 'info');
+    }
+}
+
+function insertVariableSettings(variable) {
+    const textarea = document.getElementById('prompt-content-settings');
+    const cursorPos = textarea.selectionStart;
+    const textBefore = textarea.value.substring(0, cursorPos);
+    const textAfter = textarea.value.substring(textarea.selectionEnd);
+    
+    textarea.value = textBefore + variable + textAfter;
+    textarea.focus();
+    textarea.setSelectionRange(cursorPos + variable.length, cursorPos + variable.length);
+    
+    showNotification(`Inserted ${variable}`, 'info');
+}
+
+function runPromptTest() {
+    testCurrentPromptSettings();
+}
+
+// Initialize prompt management when document loads
+document.addEventListener('DOMContentLoaded', function() {
+    // Add event listener for new prompt button
+    const newPromptBtn = document.getElementById('new-prompt-btn');
+    if (newPromptBtn) {
+        newPromptBtn.addEventListener('click', function() {
+            // Open prompt panel with new prompt flag
+            const url = `{{ url_for('main.prompt_panel') }}?new=true`;
+            window.open(url, '_blank');
+        });
+    }
+    
+    // Category selection handlers
+    document.querySelectorAll('#prompt-categories .list-group-item').forEach(item => {
+        item.addEventListener('click', function(e) {
+            e.preventDefault();
+            const category = this.dataset.category;
+            if (category) {
+                loadPromptCategory(category);
+            }
+        });
+    });
+    
+    // Range input handlers
+    const tempRange = document.getElementById('temperature-settings');
+    const topPRange = document.getElementById('top-p-settings');
+    
+    if (tempRange) {
+        tempRange.addEventListener('input', function() {
+            document.getElementById('temp-value-settings').textContent = this.value;
+        });
+    }
+    
+    if (topPRange) {
+        topPRange.addEventListener('input', function() {
+            document.getElementById('top-p-value-settings').textContent = this.value;
+        });
+    }
+    
+    // Load default system prompt on initialization
+    setTimeout(() => {
+        console.log('Initializing prompt management...');
+        testAPIConnectivity().then(apiWorking => {
+            if (apiWorking) {
+                console.log('API working, loading system category');
+                loadPromptCategory('system');
+            } else {
+                console.log('API not working, using defaults');
+                const template = defaultPromptTemplates['system'];
+                if (template) {
+                    loadPromptIntoEditor({
+                        key: 'system_prompt',
+                        value: template.content,
+                        description: template.description,
+                        name: template.name
+                    });
+                }
+            }
+        });
+    }, 500);
 });
 </script>
 {% endblock %}

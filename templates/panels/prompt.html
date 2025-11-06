@@ -363,6 +363,20 @@ const defaultPrompts = {
 
 // Event listeners
 document.addEventListener('DOMContentLoaded', function() {
+    // Handle URL parameters
+    const urlParams = new URLSearchParams(window.location.search);
+    const newParam = urlParams.get('new');
+    const editParam = urlParams.get('edit');
+    
+    if (newParam === 'true') {
+        // Start with a new prompt
+        newPrompt();
+        showToast('Creating new prompt...', 'info');
+    } else if (editParam) {
+        // Load specific prompt for editing
+        loadPromptForEditing(editParam);
+    }
+    
     // Category selection
     document.querySelectorAll('.prompt-category').forEach(item => {
         item.addEventListener('click', function(e) {
@@ -386,9 +400,50 @@ document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('top-p-value').textContent = this.value;
     });
     
-    // Load default system prompt
-    loadCategoryPrompt('system');
+    // Load default system prompt if no URL parameters
+    if (!newParam && !editParam) {
+        loadCategoryPrompt('system');
+    }
 });
+
+// Function to load a specific prompt for editing
+async function loadPromptForEditing(promptKey) {
+    try {
+        const response = await fetch('/api/prompts/');
+        const data = await response.json();
+        
+        if (data.success) {
+            const prompt = data.prompts.find(p => p.key === promptKey);
+            if (prompt) {
+                document.getElementById('prompt-name').value = prompt.name || prompt.key.replace('_', ' ').title();
+                document.getElementById('prompt-description').value = prompt.description || '';
+                document.getElementById('prompt-content').value = prompt.value || '';
+                document.getElementById('prompt-type').value = 'system';
+                
+                // Set reasonable defaults for parameters
+                document.getElementById('temperature').value = 0.7;
+                document.getElementById('temp-value').textContent = '0.7';
+                document.getElementById('max-tokens').value = 2048;
+                document.getElementById('top-p').value = 0.9;
+                document.getElementById('top-p-value').textContent = '0.9';
+                document.getElementById('is-active').checked = true;
+                
+                currentPrompt = prompt;
+                showToast(`Loaded prompt: ${prompt.name || promptKey}`, 'success');
+            } else {
+                showToast(`Prompt "${promptKey}" not found`, 'warning');
+                newPrompt();
+            }
+        } else {
+            showToast('Error loading prompts', 'error');
+            newPrompt();
+        }
+    } catch (error) {
+        console.error('Error loading prompt for editing:', error);
+        showToast('Error loading prompt', 'error');
+        newPrompt();
+    }
+}
 
 function loadCategoryPrompt(category) {
     const prompt = defaultPrompts[category] || defaultPrompts.system;
@@ -408,16 +463,35 @@ function loadCategoryPrompt(category) {
 }
 
 async function savePrompt() {
+    const promptName = document.getElementById('prompt-name').value.trim();
+    const promptContent = document.getElementById('prompt-content').value.trim();
+    
+    if (!promptName) {
+        showToast('Please enter a prompt name', 'warning');
+        return;
+    }
+    
+    if (!promptContent) {
+        showToast('Please enter prompt content', 'warning');
+        return;
+    }
+    
+    // Generate a unique key for new prompts
+    let promptKey;
+    if (currentPrompt && currentPrompt.key) {
+        promptKey = currentPrompt.key;
+    } else {
+        // Create key from name for new prompts
+        promptKey = promptName.toLowerCase()
+            .replace(/[^a-z0-9\s]/g, '')
+            .replace(/\s+/g, '_')
+            + '_prompt';
+    }
+    
     const promptData = {
-        name: document.getElementById('prompt-name').value,
-        description: document.getElementById('prompt-description').value,
-        content: document.getElementById('prompt-content').value,
-        type: document.getElementById('prompt-type').value,
-        category: currentCategory,
-        temperature: parseFloat(document.getElementById('temperature').value),
-        max_tokens: parseInt(document.getElementById('max-tokens').value),
-        top_p: parseFloat(document.getElementById('top-p').value),
-        is_active: document.getElementById('is-active').checked
+        key: promptKey,
+        value: promptContent,
+        description: document.getElementById('prompt-description').value.trim() || `Custom prompt: ${promptName}`
     };
     
     try {
@@ -433,6 +507,11 @@ async function savePrompt() {
         
         if (data.success) {
             showToast('Prompt saved successfully!', 'success');
+            
+            // Update current prompt reference
+            if (!currentPrompt) {
+                currentPrompt = { key: promptKey, value: promptContent };
+            }
         } else {
             showToast('Error saving prompt: ' + data.error, 'error');
         }

@@ -110,14 +110,7 @@ def database_panel():
 @main_bp.route('/panel/chatbot')
 def chatbot_panel():
     """Panel 5: AI chatbot interface"""
-    try:
-        sessions = ChatSession.query.order_by(ChatSession.updated_at.desc()).all()
-    except OperationalError as e:
-        current_app.logger.warning(f"Database connection failed in chatbot panel: {e}")
-        sessions = []
-    except Exception as e:
-        current_app.logger.error(f"Error loading chat sessions: {e}")
-        sessions = []
+    sessions = ChatSession.query.order_by(ChatSession.updated_at.desc()).all()
     return render_template('panels/chatbot.html', sessions=sessions)
 
 @main_bp.route('/panel/prompt')
@@ -128,6 +121,11 @@ def prompt_panel():
     current_prompt = system_prompt_setting.value if system_prompt_setting else ""
     
     return render_template('panels/prompt.html', current_prompt=current_prompt)
+
+@main_bp.route('/test-prompt')
+def test_prompt_page():
+    """Test page for prompt API debugging"""
+    return render_template('test_prompt.html')
 
 @main_bp.route('/panel/lesson-generator')
 def lesson_generator_panel():
